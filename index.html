@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Vladari Catana</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+
+    <section class="hex-cluster" aria-label="Main navigation">
+      <img class="hex-tile hex-1" src="Assets/Hex1.png" alt="" />
+      <img class="hex-tile hex-2" src="Assets/Hex2.png" alt="" />
+      <img class="hex-tile" src="Assets/Hex3.png" alt="" />
+      <img class="hex-tile" src="Assets/Hex4.png" alt="" />
+      <img class="hex-tile" src="Assets/Hex5.png" alt="" />
+      <img class="hex-tile hex-6" src="Assets/Hex6.png" alt="" />
+      <img class="hex-tile hex-7" src="Assets/Hex7.png" alt="" />
+      <button class="hex-btn label-1" data-title="O nama">O nama</button>
+      <button class="hex-btn label-2" data-title="Pravila">Pravila</button>
+      <button class="hex-btn label-3" data-title="Nagrade">Nagrade</button>
+      <button class="hex-btn label-4" data-title="Prijava">Prijava</button>
+      <button class="hex-btn label-5" data-title="Bodovanje">Bodovanje</button>
+      <button class="hex-btn label-6" data-title="Galerija">Galerija</button>
+      <button class="hex-btn label-7" data-title="Partneri">Partneri</button>
+    </section>
+
+    <div class="popup-overlay" id="popup" role="dialog" aria-modal="true" aria-labelledby="popup-title" hidden>
+      <div class="popup-box">
+        <h2 class="popup-title" id="popup-title"></h2>
+        <p class="popup-body"></p>
+        <button class="popup-close" aria-label="Close">&times;</button>
+      </div>
+    </div>
+
+    <img class="logo-corner" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
+    <h1 class="site-title">Catan Liga Zagreb</h1>
+    <p class="leaderboard-label">Leaderboard</p>
+    <div class="sm-corner">
+      <img src="Assets/SM.png" alt="Social media links" />
+      <a class="sm-link sm-instagram" href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Instagram"></a>
+      <a class="sm-link sm-tiktok" href="https://www.tiktok.com/" target="_blank" rel="noopener" aria-label="TikTok"></a>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

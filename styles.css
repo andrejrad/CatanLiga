@@ -1,0 +1,285 @@
+:root {
+  --overlay-top: rgba(83, 39, 9, 0.25);
+  --overlay-bottom: rgba(26, 14, 7, 0.56);
+  --cw: 264vw;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: #130a05;
+  overflow: hidden;
+}
+
+/* --cw controls the overall scale of the honeycomb.
+   All 7 hex PNGs share the same 1920x1080 canvas — stacking them
+   as layers at 0,0 inside this container produces the correct honeycomb.
+   Container is offset so Hex4's visible center (canvas 845,519) sits
+   at exact viewport centre. */
+.hex-cluster {
+  position: fixed;
+  width: var(--cw);
+  height: calc(var(--cw) * 0.5625); /* 1080/1920 */
+  left: calc(50vw - var(--cw) * 0.4401); /* 845/1920 */
+  top: calc(50vh - var(--cw) * 0.3677); /* shifted up one hex row (187/1920) */ /* 519/1920 */
+  z-index: 1;
+}
+
+.hex-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* Hex2 opaque content sits at canvas (626,520) but belongs at top-right (954,330).
+   Translate: Δx=328/1920=17.08%, Δy=-190/1080=-17.59% of element dims. */
+.hex-2 {
+  transform: translate(17.08%, -17.59%);
+}
+
+/* Per-tile corrections to achieve equal D=218.5px spacing on all adjacent pairs.
+   Percentages relative to element width (1920px) and height (1080px). */
+.hex-1 { transform: translate(0.83%,  -0.19%); }  /* canvas (720,332) → ideal (736,330) */
+.hex-6 { transform: translate(-0.21%, -0.19%); }  /* canvas (740,710) → ideal (736,708) */
+.hex-7 { transform: translate(-0.31%, -1.11%); }  /* canvas (960,720) → ideal (954,708) */
+
+/* ── Hex labels ─────────────────────────────────────────────────────────────
+   Positions are (visual_cx / 1920) left, (text_cy / 1080) top.
+   text_cy = visible_top + 28% of visible hex height.
+   Hex1/2 visible top ≈ 214, height ≈ 237 → text_cy ≈ 280
+   Hex3/4/5 visible top ≈ 401, height ≈ 236 → text_cy ≈ 467
+   Hex6/7 visible top ≈ 592, height ≈ 236 → text_cy ≈ 658
+   ─────────────────────────────────────────────────────────────────────────── */
+.hex-btn {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: calc(var(--cw) * 0.012);
+  color: #fff8e8;
+  text-shadow: 0 1px 4px rgba(20,8,0,0.9), 0 0 10px rgba(0,0,0,0.6);
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: nowrap;
+  z-index: 3;
+  background: none;
+  border: none;
+  padding: calc(var(--cw) * 0.012) calc(var(--cw) * 0.018);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.hex-btn:hover  { color: #ffe680; }
+.hex-btn:active { transform: translate(-50%, -50%) scale(0.95); }
+
+/* ── Popup ────────────────────────────────────────────────────────────── */
+.popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(10, 5, 2, 0.72);
+  backdrop-filter: blur(3px);
+}
+
+.popup-overlay[hidden] { display: none; }
+
+.popup-box {
+  position: relative;
+  width: min(88vw, 26rem);
+  padding: 2rem 1.6rem 1.6rem;
+  border-radius: 1rem;
+  border: 1px solid rgba(255, 220, 150, 0.25);
+  background: linear-gradient(160deg, rgba(60,28,8,0.92), rgba(25,12,4,0.96));
+  color: #fff8e8;
+  text-align: center;
+}
+
+.popup-title {
+  margin: 0 0 0.75rem;
+  font-family: 'Cinzel', serif;
+  font-size: clamp(1.1rem, 5vw, 1.6rem);
+  font-weight: 700;
+  color: #ffd97a;
+}
+
+.popup-body {
+  margin: 0;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: clamp(0.9rem, 3.5vw, 1rem);
+  line-height: 1.55;
+  color: #ffe9cf;
+}
+
+.popup-close {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.7rem;
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: #ffd97a;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+}
+
+.label-1 { left: 38.3%; top: 25.9%; } /* O nama    — Hex1 visual cx=736, ty=280 */
+.label-2 { left: 49.7%; top: 25.7%; } /* Pravila   — Hex2 visual cx=954, ty=278 */
+.label-3 { left: 32.6%; top: 43.2%; } /* Nagrade   — Hex3 cx=626,  ty=467      */
+.label-4 { left: 44.0%; top: 43.2%; } /* Prijava   — Hex4 cx=845,  ty=467      */
+.label-5 { left: 55.4%; top: 43.2%; } /* Bodovanje — Hex5 cx=1063, ty=467      */
+.label-6 { left: 38.3%; top: 60.9%; } /* Galerija  — Hex6 visual cx=736, ty=658 */
+.label-7 { left: 49.7%; top: 60.9%; } /* Partneri  — Hex7 visual cx=954, ty=658 */
+
+.bg {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  background-image:
+    linear-gradient(to bottom, var(--overlay-top), var(--overlay-bottom)),
+    url("Assets/POZADINA.jpeg");
+  background-position: center 40%;
+  background-repeat: no-repeat;
+  background-size: cover;
+  transform: scale(1.02);
+}
+
+.logo-corner,
+.sm-corner {
+  position: fixed;
+  z-index: 2;
+  height: auto;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.logo-corner {
+  top: 10px;
+  left: 0;
+  width: min(136vw, 35.2rem);
+  transform: translate(-40%, -36%);
+  transform-origin: top left;
+}
+
+.site-title {
+  position: fixed;
+  left: 17vw;
+  right: 0;
+  top: 6vw;
+  margin: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: clamp(1.19rem, 4.9vw, 2.1rem);
+  color: #fff7e8;
+  text-shadow: 0 1px 6px rgba(40,12,0,0.7);
+  letter-spacing: 0.04em;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.leaderboard-label {
+  position: fixed;
+  left: 0;
+  right: 0;
+  /* cluster top + (828/1080)*height + gap = below visible hex bottom */
+  top: calc(50vh - var(--cw) * 0.3677 + var(--cw) * 0.5625 * 0.767 + 8vw);
+  margin: 0;
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: clamp(1.19rem, 4.9vw, 2.1rem);
+  color: #fff7e8;
+  text-shadow: 0 1px 6px rgba(40,12,0,0.7);
+  letter-spacing: 0.04em;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.sm-corner {
+  position: fixed;
+  right: 10vw;
+  bottom: 0;
+  width: min(148vw, 38rem);
+  transform: translate(20%, 24%);
+  transform-origin: bottom right;
+}
+
+.sm-corner img {
+  width: 100%;
+  height: auto;
+  display: block;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+.sm-link {
+  position: absolute;
+  top: 56%;
+  height: 16%;
+  cursor: pointer;
+}
+
+.sm-instagram {
+  left: 36%;
+  width: 13%;
+}
+
+.sm-tiktok {
+  left: 51%;
+  width: 13%;
+}
+
+@media (min-width: 40rem) {
+  .bg {
+    background-position: center 38%;
+  }
+
+  :root {
+    --cw: 160vw;
+  }
+
+  .logo-corner {
+    width: min(96vw, 44rem);
+  }
+
+  .sm-corner {
+    width: min(100vw, 48rem);
+  }
+}
+
+@media (min-width: 64rem) {
+  .bg {
+    background-position: center 33%;
+  }
+
+  :root {
+    --cw: 104vw;
+  }
+
+  .logo-corner {
+    width: min(72vw, 48rem);
+  }
+
+  .sm-corner {
+    width: min(80vw, 52rem);
+  }
+}
