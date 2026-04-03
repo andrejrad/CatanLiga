@@ -65,6 +65,18 @@ body {
    ─────────────────────────────────────────────────────────────────────────── */
 .hex-btn {
   position: absolute;
+  z-index: 3;
+  background: none;
+  border: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  padding: 0;
+}
+
+.hex-label-text {
+  position: absolute;
+  top: 44%;
+  left: 50%;
   transform: translate(-50%, -50%);
   font-family: 'Cinzel', serif;
   font-weight: 700;
@@ -74,16 +86,11 @@ body {
   letter-spacing: 0.02em;
   text-align: center;
   white-space: nowrap;
-  z-index: 3;
-  background: none;
-  border: none;
-  padding: calc(var(--cw) * 0.012) calc(var(--cw) * 0.018);
-  cursor: pointer;
-  -webkit-tap-highlight-color: transparent;
+  pointer-events: none;
 }
 
-.hex-btn:hover  { color: #ffe680; }
-.hex-btn:active { transform: translate(-50%, -50%) scale(0.95); }
+.hex-btn:hover .hex-label-text  { color: #ffe680; }
+.hex-btn:active { transform: scale(0.95); }
 
 /* ── Popup ────────────────────────────────────────────────────────────── */
 .popup-overlay {
@@ -139,13 +146,17 @@ body {
   padding: 0.25rem 0.4rem;
 }
 
-.label-1 { left: 38.3%; top: 25.9%; } /* O nama    — Hex1 visual cx=736, ty=280 */
-.label-2 { left: 49.7%; top: 25.7%; } /* Pravila   — Hex2 visual cx=954, ty=278 */
-.label-3 { left: 32.6%; top: 43.2%; } /* Nagrade   — Hex3 cx=626,  ty=467      */
-.label-4 { left: 44.0%; top: 43.2%; } /* Prijava   — Hex4 cx=845,  ty=467      */
-.label-5 { left: 55.4%; top: 43.2%; } /* Bodovanje — Hex5 cx=1063, ty=467      */
-.label-6 { left: 38.3%; top: 60.9%; } /* Galerija  — Hex6 visual cx=736, ty=658 */
-.label-7 { left: 49.7%; top: 60.9%; } /* Partneri  — Hex7 visual cx=954, ty=658 */
+/* Each button covers the full visual hex area.
+   left/top = hex visual top-left corner as % of container dims.
+   width/height = hex visual size as % of container dims.
+   (canvas 1920×1080, container height = --cw × 0.5625) */
+.label-1 { left: 32.89%; top: 19.75%; width: 10.88%; height: 21.94%; }
+.label-2 { left: 44.23%; top: 19.62%; width: 10.94%; height: 21.76%; }
+.label-3 { left: 27.13%; top: 37.13%; width: 10.94%; height: 21.76%; }
+.label-4 { left: 38.68%; top: 37.09%; width: 10.63%; height: 21.85%; }
+.label-5 { left: 50.12%; top: 37.13%; width: 10.57%; height: 21.76%; }
+.label-6 { left: 32.91%; top: 54.83%; width: 10.78%; height: 21.76%; }
+.label-7 { left: 44.49%; top: 54.95%; width: 10.42%; height: 21.48%; }
 
 .bg {
   position: fixed;
@@ -177,24 +188,32 @@ body {
   transform-origin: top left;
 }
 
-.site-title {
+.top-right-nav {
   position: fixed;
-  left: 17vw;
-  right: 0;
   top: 6vw;
-  margin: 0;
+  right: 4vw;
+  z-index: 3;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.4em;
+}
+
+.nav-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
   font-family: 'Cinzel', serif;
   font-weight: 500;
-  font-size: clamp(1.19rem, 4.9vw, 2.1rem);
+  font-size: clamp(0.85rem, 3.5vw, 1.4rem);
   color: #fff7e8;
   text-shadow: 0 1px 6px rgba(40,12,0,0.7);
   letter-spacing: 0.04em;
-  z-index: 3;
-  pointer-events: none;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
+
+.nav-btn:hover { color: #ffe680; }
 
 .leaderboard-label {
   position: fixed;

@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css" />
+    <link rel="stylesheet" href="styles.css?v=4" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -23,13 +23,13 @@
       <img class="hex-tile" src="Assets/Hex5.png" alt="" />
       <img class="hex-tile hex-6" src="Assets/Hex6.png" alt="" />
       <img class="hex-tile hex-7" src="Assets/Hex7.png" alt="" />
-      <button class="hex-btn label-1" data-title="O nama">O nama</button>
-      <button class="hex-btn label-2" data-title="Pravila">Pravila</button>
-      <button class="hex-btn label-3" data-title="Nagrade">Nagrade</button>
-      <button class="hex-btn label-4" data-title="Prijava">Prijava</button>
-      <button class="hex-btn label-5" data-title="Bodovanje">Bodovanje</button>
-      <button class="hex-btn label-6" data-title="Galerija">Galerija</button>
-      <button class="hex-btn label-7" data-title="Partneri">Partneri</button>
+      <button class="hex-btn label-1" data-title="O nama"><span class="hex-label-text">O nama</span></button>
+      <button class="hex-btn label-2" data-title="Pravila"><span class="hex-label-text">Pravila</span></button>
+      <button class="hex-btn label-3" data-title="Nagrade"><span class="hex-label-text">Nagrade</span></button>
+      <button class="hex-btn label-4" data-title="Prijava"><span class="hex-label-text">Prijava</span></button>
+      <button class="hex-btn label-5" data-title="Bodovanje"><span class="hex-label-text">Bodovanje</span></button>
+      <button class="hex-btn label-6" data-title="Galerija"><span class="hex-label-text">Galerija</span></button>
+      <button class="hex-btn label-7" data-title="Partneri"><span class="hex-label-text">Partneri</span></button>
     </section>
 
     <div class="popup-overlay" id="popup" role="dialog" aria-modal="true" aria-labelledby="popup-title" hidden>
@@ -41,7 +41,10 @@
     </div>
 
     <img class="logo-corner" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
-    <h1 class="site-title">Catan Liga Zagreb</h1>
+    <nav class="top-right-nav">
+      <button class="nav-btn" data-title="Kontakt">Kontakt</button>
+      <button class="nav-btn" data-title="FAQ">FAQ</button>
+    </nav>
     <p class="leaderboard-label">Leaderboard</p>
     <div class="sm-corner">
       <img src="Assets/SM.png" alt="Social media links" />

@@ -12,9 +12,11 @@ const content = {
   'Bodovanje':  'Bodovanje — placeholder text.',
   'Galerija':   'Galerija — placeholder text.',
   'Partneri':   'Partneri — placeholder text.',
+  'Kontakt':    'Kontakt — placeholder text.',
+  'FAQ':        'FAQ — placeholder text.',
 };
 
-document.querySelectorAll('.hex-btn').forEach(btn => {
+document.querySelectorAll('.hex-btn, .nav-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     const title = btn.dataset.title;
     popTitle.textContent = title;

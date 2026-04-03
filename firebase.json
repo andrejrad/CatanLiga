@@ -1,0 +1,22 @@
+{
+  "hosting": {
+    "public": ".",
+    "ignore": [
+      ".git",
+      ".gitignore",
+      "firebase.json",
+      ".firebaserc",
+      "Assets/Layout.jpeg"
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css)",
+        "headers": [{"key": "Cache-Control", "value": "max-age=86400"}]
+      },
+      {
+        "source": "**/*.@(png|jpg|jpeg|webp)",
+        "headers": [{"key": "Cache-Control", "value": "max-age=604800"}]
+      }
+    ]
+  }
+}
