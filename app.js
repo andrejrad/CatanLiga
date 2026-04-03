@@ -16,13 +16,14 @@ const content = {
   'FAQ':        'FAQ — placeholder text.',
 };
 
-document.querySelectorAll('.hex-btn, .nav-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    const title = btn.dataset.title;
-    popTitle.textContent = title;
-    popBody.textContent  = content[title] ?? '';
-    popup.hidden = false;
-  });
+document.addEventListener('click', e => {
+  const btn = e.target.closest('.hex-label-btn, .hex-btn, .nav-btn');
+  if (!btn) return;
+
+  const title = btn.dataset.title;
+  popTitle.textContent = title;
+  popBody.textContent  = content[title] ?? '';
+  popup.hidden = false;
 });
 
 function closePopup() { popup.hidden = true; }
