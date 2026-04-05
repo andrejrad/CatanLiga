@@ -1,0 +1,25 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    match /partner-logos/{fileName} {
+      allow read: if true;
+      allow write: if request.resource == null
+        || (request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*'));
+    }
+
+    match /gallery-images/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.resource == null
+        || (request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*'));
+    }
+
+    match /award-images/{allPaths=**} {
+      allow read: if true;
+      allow write: if request.resource == null
+        || (request.resource.size < 10 * 1024 * 1024
+        && request.resource.contentType.matches('image/.*'));
+    }
+  }
+}

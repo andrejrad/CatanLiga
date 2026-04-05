@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Turniri</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=51" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+    <a href="admin.html" aria-label="Back to admin page">
+      <img class="logo-corner logo-clickable" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
+    </a>
+    <h1 class="page-title page-title-flow">Turniri</h1>
+    <div class="page-content">
+      <p class="admin-note">Dodaj termin turnira odabirom datuma, venue partnera, vremena i kola.</p>
+
+      <form id="tournamentForm" class="admin-form" novalidate>
+        <label class="form-field">
+          <span class="form-label">Datum</span>
+          <input id="tournamentDate" name="tournamentDate" type="date" required />
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Venue</span>
+          <select id="tournamentVenue" name="tournamentVenue" required>
+            <option value="">Učitavanje venue partnera...</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Vrijeme</span>
+          <input id="tournamentTime" name="tournamentTime" type="time" required />
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Kolo</span>
+          <input id="tournamentRound" name="tournamentRound" type="number" min="1" step="1" required />
+        </label>
+
+        <p id="tournamentFormStatus" class="form-status" aria-live="polite"></p>
+
+        <div class="page-cta-row page-cta-row-left">
+          <button id="tournamentSubmitBtn" class="page-cta-btn" type="submit">Dodaj turnir</button>
+          <button id="tournamentCancelEdit" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Odustani</button>
+        </div>
+      </form>
+
+      <h2 class="about-heading"><strong>Popis turnira</strong></h2>
+      <div class="partner-filters" aria-label="Filter turnira">
+        <label class="form-field">
+          <span class="form-label">Filtriraj po kolu</span>
+          <select id="tournamentFilterRound">
+            <option value="">Sva kola</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Filtriraj po venue</span>
+          <select id="tournamentFilterVenue">
+            <option value="">Svi venue partneri</option>
+          </select>
+        </label>
+      </div>
+      <div id="tournamentList" class="tournament-list" aria-live="polite">
+        <p class="admin-note">Učitavanje turnira...</p>
+      </div>
+    </div>
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="admin-turniri.js?v=8"></script>
+  </body>
+</html>

@@ -10,13 +10,34 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=24" />
+    <link rel="stylesheet" href="styles.css?v=58" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
     <a href="index.html" aria-label="Back to landing page">
       <img class="logo-corner logo-clickable" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
     </a>
-    <h1 class="page-title">Nagrade</h1>
+    <h1 class="page-title page-title-flow">Nagrade</h1>
+    <div class="page-content">
+      <p class="page-paragraph">Bori se za vrh, skupljaj bodove iz kola u kolo i osvoji nagrade koje te cekaju na postolju Vladara Catana.</p>
+
+      <div id="publicAwardsList" class="award-list" aria-live="polite">
+        <p class="admin-note">Ucitavanje nagrada...</p>
+      </div>
+
+      <div class="page-cta-row" aria-label="Quick actions">
+        <a class="page-cta-btn" href="prijava.html">Prijava</a>
+        <a class="page-cta-btn" href="ranking.html">Leaderboard</a>
+      </div>
+
+      <div class="page-cta-row" aria-label="Kontakt link">
+        <a class="nav-btn" href="kontakt.html">Kontakt</a>
+      </div>
+    </div>
+
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="nagrade.js?v=1"></script>
   </body>
 </html>

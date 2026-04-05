@@ -10,13 +10,57 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=24" />
+    <link rel="stylesheet" href="styles.css?v=56" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
     <a href="index.html" aria-label="Back to landing page">
       <img class="logo-corner logo-clickable" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
     </a>
-    <h1 class="page-title">Galerija</h1>
+    <h1 class="page-title page-title-flow">Galerija</h1>
+    <div class="page-content">
+      <p class="content-intro">Sve fotke turnira na jednom mjestu. Po potrebi filtriraj prikaz po odabranom turniru.</p>
+
+      <div class="partner-filters" aria-label="Filter galerije">
+        <label class="form-field">
+          <span class="form-label">Turnir</span>
+          <select id="publicGalleryTournamentFilter">
+            <option value="">Ucitavanje turnira...</option>
+          </select>
+        </label>
+      </div>
+
+      <div id="publicGalleryList" class="public-gallery-grid" aria-live="polite">
+        <p class="admin-note">Ucitavanje galerije...</p>
+      </div>
+
+      <div class="page-cta-row" aria-label="Quick actions">
+        <a class="page-cta-btn" href="prijava.html">Prijava</a>
+        <a class="page-cta-btn" href="ranking.html">Leaderboard</a>
+      </div>
+
+      <div class="page-cta-row" aria-label="Kontakt link">
+        <a class="nav-btn" href="kontakt.html">Kontakt</a>
+      </div>
+    </div>
+
+    <div id="publicGalleryZoomOverlay" class="gallery-zoom-overlay" hidden>
+      <div class="gallery-zoom-box" role="dialog" aria-modal="true" aria-label="Prikaz slike">
+        <button id="publicGalleryZoomClose" class="gallery-zoom-close" type="button" aria-label="Zatvori prikaz">×</button>
+        <div class="gallery-zoom-toolbar">
+          <button id="publicGalleryZoomOut" class="partner-action-btn partner-action-btn-secondary" type="button" aria-label="Umanji">-</button>
+          <button id="publicGalleryZoomReset" class="partner-action-btn partner-action-btn-secondary" type="button" aria-label="Resetiraj zoom">100%</button>
+          <button id="publicGalleryZoomIn" class="partner-action-btn" type="button" aria-label="Uvecaj">+</button>
+        </div>
+        <div class="gallery-zoom-stage">
+          <img id="publicGalleryZoomImage" class="gallery-zoom-image" alt="Uvecana slika turnira" />
+        </div>
+      </div>
+    </div>
+
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="galerija.js?v=5"></script>
   </body>
 </html>

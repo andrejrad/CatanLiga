@@ -18,5 +18,11 @@
         "headers": [{"key": "Cache-Control", "value": "max-age=604800"}]
       }
     ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "storage": {
+    "rules": "storage.rules"
   }
 }
