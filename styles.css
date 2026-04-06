@@ -1099,29 +1099,28 @@ body {
 }
 
 .bodovanje-tablist {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.55rem;
-  padding: 0.75rem 0 1rem;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.62rem;
+  padding: 0.9rem 0 1.1rem;
 }
 
 .bodovanje-tab {
   border: 1.5px solid rgba(255, 220, 150, 0.48);
-  border-radius: 999px;
-  padding: 0.52rem 0.95rem;
+  border-radius: 0.9rem;
+  padding: 0.75rem 1.2rem;
   background: rgba(34, 16, 6, 0.55);
   color: #e8d5a8;
   text-align: center;
   font-family: 'Cinzel', serif;
   font-weight: 700;
-  font-size: clamp(0.72rem, 2.2vw, 0.82rem);
-  line-height: 1.2;
+  font-size: clamp(0.82rem, 2.4vw, 0.95rem);
+  line-height: 1.35;
   letter-spacing: 0.01em;
   text-transform: uppercase;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  white-space: nowrap;
+  width: 100%;
 }
 
 .bodovanje-tab:hover,
@@ -1236,15 +1235,13 @@ body {
 
 @media (max-width: 39.99rem) {
   .bodovanje-tablist {
-    gap: 0.4rem;
-    justify-content: flex-start;
-    padding: 0.65rem 0 0.9rem;
-    overflow-x: auto;
+    gap: 0.52rem;
+    padding: 0.8rem 0 1rem;
   }
 
   .bodovanje-tab {
-    font-size: 0.68rem;
-    padding: 0.46rem 0.8rem;
+    font-size: 0.76rem;
+    padding: 0.68rem 1rem;
   }
 
   .bodovanje-panel {
@@ -1317,8 +1314,8 @@ body {
 
 @media (min-width: 40rem) {
   .bodovanje-tab {
-    font-size: 0.76rem;
-    padding: 0.54rem 1.08rem;
+    font-size: 0.88rem;
+    padding: 0.82rem 1.3rem;
   }
 
   .bodovanje-panel {
