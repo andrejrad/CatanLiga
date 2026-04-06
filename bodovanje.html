@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="hr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=46" />
+    <link rel="stylesheet" href="styles.css?v=47" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -24,9 +24,191 @@
         <a class="page-cta-btn" href="ranking.html">Leaderboard</a>
       </div>
 
+      <section class="bodovanje-tabs" aria-label="Sekcije bodovanja">
+        <div class="bodovanje-tablist" role="tablist" aria-label="Bodovanje tabovi">
+          <button class="bodovanje-tab is-active" id="tab-kolo" type="button" role="tab" aria-selected="true" aria-controls="panel-kolo" data-tab-target="panel-kolo">
+            BODOVANJE POJEDINAČNOG KOLA
+          </button>
+          <button class="bodovanje-tab" id="tab-liga" type="button" role="tab" aria-selected="false" aria-controls="panel-liga" data-tab-target="panel-liga" tabindex="-1">
+            BODOVANJE LIGE
+          </button>
+          <button class="bodovanje-tab" id="tab-ukupni" type="button" role="tab" aria-selected="false" aria-controls="panel-ukupni" data-tab-target="panel-ukupni" tabindex="-1">
+            UKUPNI LIGAŠKI POREDAK
+          </button>
+          <button class="bodovanje-tab" id="tab-faq" type="button" role="tab" aria-selected="false" aria-controls="panel-faq" data-tab-target="panel-faq" tabindex="-1">
+            FAQ
+          </button>
+        </div>
+
+        <article class="bodovanje-panel is-active" id="panel-kolo" role="tabpanel" aria-labelledby="tab-kolo">
+          <h2 class="about-heading">Kako izgleda jedno kolo?</h2>
+          <p class="page-paragraph">Jedno kolo sastoji se od 3 partije Catana.</p>
+          <ul class="about-list">
+            <li>Runda 1 - nasumičan raspored igrača</li>
+            <li>Runda 2 - nasumičan raspored igrača</li>
+            <li>Runda 3 - raspored igrača posložen prema rankingu kola</li>
+          </ul>
+          <p class="page-paragraph">Nakon svake runde rezultati se upisuju u tablicu, a svi se bodovi zbrajaju u ukupni poredak kola.</p>
+          <p class="page-paragraph">Za razliku od cijele lige, bodovi za poredak pojedinačnog kola ne uključuju Kahoot bonus. Dakle, svaka runda donosi ti bodove iz same igre * 0,5, a zatim i dodatni bonus prema plasmanu nakon svake partije.</p>
+
+          <div class="bodovanje-table-wrap" role="region" aria-label="Bonus bodovi za plasman">
+            <table class="bodovanje-table">
+              <thead>
+                <tr>
+                  <th scope="col">Plasman</th>
+                  <th scope="col">Bonus bodovi</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td>1. mjesto</td>
+                  <td>+4</td>
+                </tr>
+                <tr>
+                  <td>2. mjesto</td>
+                  <td>+2</td>
+                </tr>
+                <tr>
+                  <td>3. mjesto</td>
+                  <td>+1</td>
+                </tr>
+                <tr>
+                  <td>4. mjesto</td>
+                  <td>0</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <p class="page-paragraph"><strong>Formula bodovanja za pojedinačno kolo:</strong> bodovi iz igre * 0,5 + bonus bodovi za plasman</p>
+          <p class="page-paragraph"><strong>Primjer bodovanja:</strong><br />Ako završiš partiju s 8 bodova i budeš 2. za stolom, za tu rundu osvajaš: 8*0,5 + 2 = 6 bodova</p>
+        </article>
+
+        <article class="bodovanje-panel" id="panel-liga" role="tabpanel" aria-labelledby="tab-liga" hidden>
+          <p class="page-paragraph">Svaka partija se računa. Svakim si bodom sve bliže tituli Vladara Catana.</p>
+          <p class="page-paragraph">U svakom kolu Catan Lige Zagreb sakupljaš bodove za ukupni poredak lige.</p>
+          <p class="page-paragraph">Bodove za ligu možeš dobiti na tri različita načina.</p>
+
+          <h2 class="about-heading">Bodovi iz igre</h2>
+          <p class="page-paragraph">Svaka runda donosi ti bodove iz same igre.</p>
+          <p class="page-paragraph">Pobjednički bodovi (VP) osvojeni u partiji * 0,5</p>
+
+          <h2 class="about-heading">Bonus bodovi za plasman</h2>
+          <p class="page-paragraph">Na kraju svake runde dobivaš dodatne bodove ovisno o tome koje si mjesto zauzeo.</p>
+          <p class="page-paragraph">1. mjesto: +4 boda; 2. mjesto: +2 boda; 3. mjesto: +1 bod; 4. mjesto: 0 bodova</p>
+
+          <h2 class="about-heading">Kahoot bonus</h2>
+          <p class="page-paragraph">Na kraju večeri pobjednik Kahoota osvaja dodatni +1 bod za ligu.</p>
+          <p class="page-paragraph">Pobjednik kviza: +1 bod u ligi</p>
+
+          <p class="page-paragraph"><strong>Formula bodovanja za poredak lige:</strong> bodovi iz igre * 0,5 + bonus bodovi za plasman + Kahoot bonus</p>
+        </article>
+
+        <article class="bodovanje-panel" id="panel-ukupni" role="tabpanel" aria-labelledby="tab-ukupni" hidden>
+          <h2 class="about-heading">Kako se računa ukupna liga?</h2>
+          <p class="page-paragraph">Svi bodovi iz svih kola se zbrajaju u ukupni ranking lige.</p>
+          <p class="page-paragraph">Što više dolazaka i boljih rezultata, veća je šansa za završetak na vrhu tablice i borbu za titulu Vladara Catana.</p>
+
+          <h2 class="about-heading">Važno</h2>
+          <ul class="about-list">
+            <li>Redovit dolazak je velika prednost.</li>
+            <li>Ne pobjeđuje samo jedan odličan nastup - pobjeđuje kontinuitet.</li>
+          </ul>
+        </article>
+
+        <article class="bodovanje-panel" id="panel-faq" role="tabpanel" aria-labelledby="tab-faq" hidden>
+          <div class="faq-list">
+            <section class="faq-item">
+              <h2 class="about-heading">Dobivam li bodove i ako ne pobijedim partiju?</h2>
+              <p class="page-paragraph">Da. Dobivaš onoliko bodova koliko osvojiš u igri, čak i ako ne završiš prvi.</p>
+            </section>
+
+            <section class="faq-item">
+              <h2 class="about-heading">Računa li se samo pobjeda?</h2>
+              <p class="page-paragraph">Ne. Računa se svaki pobjednički bod (VP) koji osvojiš, a plasman ti donosi dodatan bonus.</p>
+            </section>
+
+            <section class="faq-item">
+              <h2 class="about-heading">Koliko bodova nosi Kahoot?</h2>
+              <p class="page-paragraph">Pobjednik Kahoota osvaja +1 bod za poredak u ligi te dobiva besplatnu kotizaciju za sljedeće kolo.</p>
+            </section>
+
+            <section class="faq-item">
+              <h2 class="about-heading">Mogu li i dalje biti rangiran visoko u ligi ako preskočim jedno kolo?</h2>
+              <p class="page-paragraph">Možeš, ali redovit dolazak povećava tvoje šanse za vrh tablice.</p>
+            </section>
+
+            <section class="faq-item">
+              <h2 class="about-heading">Što ako dva igrača imaju isti broj bodova?</h2>
+              <p class="page-paragraph">U slučaju istog broja bodova, prednost ima igrač koji ima:</p>
+              <ol class="bodovanje-ordered-list">
+                <li>više pobjeda</li>
+                <li>više ukupnih bodova iz partija</li>
+                <li>bolji rezultat u zadnjem odigranom kolu</li>
+              </ol>
+            </section>
+          </div>
+        </article>
+      </section>
+
       <div class="page-cta-row" aria-label="Kontakt link">
         <a class="nav-btn" href="kontakt.html">Kontakt</a>
       </div>
     </div>
+
+    <script>
+      (function () {
+        var tabButtons = document.querySelectorAll('.bodovanje-tab');
+        var tabPanels = document.querySelectorAll('.bodovanje-panel');
+
+        function activateTab(button) {
+          var targetId = button.getAttribute('data-tab-target');
+
+          tabButtons.forEach(function (tabButton) {
+            var isActive = tabButton === button;
+            tabButton.classList.toggle('is-active', isActive);
+            tabButton.setAttribute('aria-selected', isActive ? 'true' : 'false');
+            tabButton.setAttribute('tabindex', isActive ? '0' : '-1');
+          });
+
+          tabPanels.forEach(function (panel) {
+            var isActive = panel.id === targetId;
+            panel.classList.toggle('is-active', isActive);
+            panel.hidden = !isActive;
+          });
+        }
+
+        tabButtons.forEach(function (button, index) {
+          button.addEventListener('click', function () {
+            activateTab(button);
+          });
+
+          button.addEventListener('keydown', function (event) {
+            var currentIndex = Array.prototype.indexOf.call(tabButtons, button);
+            var nextIndex = currentIndex;
+
+            if (event.key === 'ArrowRight') {
+              nextIndex = (currentIndex + 1) % tabButtons.length;
+            } else if (event.key === 'ArrowLeft') {
+              nextIndex = (currentIndex - 1 + tabButtons.length) % tabButtons.length;
+            } else if (event.key === 'Home') {
+              nextIndex = 0;
+            } else if (event.key === 'End') {
+              nextIndex = tabButtons.length - 1;
+            } else {
+              return;
+            }
+
+            event.preventDefault();
+            tabButtons[nextIndex].focus();
+            activateTab(tabButtons[nextIndex]);
+          });
+
+          if (index === 0) {
+            activateTab(button);
+          }
+        });
+      })();
+    </script>
   </body>
 </html>
