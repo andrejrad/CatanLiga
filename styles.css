@@ -190,7 +190,7 @@ body {
 .logo-corner {
   top: 20px;
   left: 50%;
-  width: min(187.7vw, 48.6rem);
+  width: min(220vw, 60rem);
   transform: translate(-50%, -36%);
   transform-origin: top center;
   pointer-events: none;
@@ -1310,6 +1310,10 @@ body {
     height: 1.35rem;
     font-size: 0.76rem;
   }
+
+  .logo-corner {
+    width: min(260vw, 65rem);
+  }
 }
 
 @media (min-width: 40rem) {
@@ -1345,7 +1349,7 @@ body {
   }
 
   .logo-corner {
-    width: min(132.5vw, 60.7rem);
+    width: min(150vw, 73rem);
   }
 
   .sm-corner {
@@ -1368,7 +1372,7 @@ body {
   }
 
   .logo-corner {
-    width: min(99.4vw, 66.2rem);
+    width: min(122.5vw, 80rem);
   }
 
   .sm-corner {
