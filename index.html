@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=72" />
+    <link rel="stylesheet" href="styles.css?v=73" />
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
@@ -85,23 +85,28 @@
             .get()
             .then(function(snapshot) {
               var now = new Date();
-              var today = now.toISOString().split('T')[0];
               var nextTournament = null;
+              var nextTournamentTime = null;
 
               snapshot.forEach(function(doc) {
                 var tournament = doc.data();
                 if (tournament.active !== false && tournament.date && tournament.time) {
-                  if (!nextTournament || tournament.date > today || (tournament.date === today && tournament.time > now.toLocaleTimeString('sv-SE').substring(0, 5))) {
-                    if (!nextTournament || tournament.date < nextTournament.date || (tournament.date === nextTournament.date && tournament.time < nextTournament.time)) {
-                      nextTournament = tournament;
+                  try {
+                    var tournamentDateTime = new Date(tournament.date + 'T' + tournament.time);
+                    if (tournamentDateTime > now) {
+                      if (!nextTournamentTime || tournamentDateTime < nextTournamentTime) {
+                        nextTournament = tournament;
+                        nextTournamentTime = tournamentDateTime;
+                      }
                     }
+                  } catch (e) {
+                    console.error('Greška pri parsiranju turnira:', e);
                   }
                 }
               });
 
-              if (nextTournament && nextTournament.date && nextTournament.time) {
-                var tournamentDateTime = new Date(nextTournament.date + 'T' + nextTournament.time);
-                var diff = tournamentDateTime - now;
+              if (nextTournament && nextTournamentTime) {
+                var diff = nextTournamentTime - now;
 
                 if (diff > 0) {
                   var days = Math.floor(diff / (1000 * 60 * 60 * 24));
