@@ -481,13 +481,21 @@ body {
 
 /* ── Countdown section ───────────────────────────────────────────────────── */
 .countdown-section {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 0.6rem;
   margin: 0.7rem auto;
-  z-index: 3;
-  pointer-events: none;
+  z-index: 6;
+  pointer-events: auto;
+}
+
+.countdown-link-btn {
+  margin: 0;
+  position: relative;
+  z-index: 7;
+  pointer-events: auto;
 }
 
 .countdown-label {
@@ -1305,6 +1313,10 @@ body {
 }
 
 @media (max-width: 39.99rem) {
+  .countdown-section {
+    margin-top: -2.6rem;
+  }
+
   .bodovanje-tablist {
     gap: 0.52rem;
     padding: 0.8rem 0 1rem;
