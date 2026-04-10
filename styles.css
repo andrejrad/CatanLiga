@@ -479,6 +479,37 @@ body {
   margin: 0 auto;
 }
 
+/* ── Countdown section ───────────────────────────────────────────────────── */
+.countdown-section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 1.4rem auto;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.countdown-label {
+  margin: 0;
+  font-family: 'Cinzel', serif;
+  font-weight: 500;
+  font-size: clamp(1rem, 4vw, 1.3rem);
+  color: #fff7e8;
+  text-shadow: 0 1px 6px rgba(40,12,0,0.7);
+  letter-spacing: 0.03em;
+}
+
+.countdown-display {
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(1.8rem, 7vw, 2.8rem);
+  color: #ffe680;
+  text-shadow: 0 2px 8px rgba(40,12,0,0.8);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+}
+
 .admin-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));

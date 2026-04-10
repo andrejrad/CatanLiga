@@ -10,7 +10,10 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=68" />
+    <link rel="stylesheet" href="styles.css?v=71" />
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -36,6 +39,10 @@
 
     <img class="logo-corner" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
     <div class="hex-spacer" aria-hidden="true"></div>
+    <div class="countdown-section">
+      <p class="countdown-label">Slijedeci turnir:</p>
+      <div class="countdown-display" id="countdownDisplay">--:--:--:--</div>
+    </div>
     <a class="page-cta-btn leaderboard-btn" href="ranking.html">Leaderboard</a>
     <table class="leaderboard-table">
       <tr><td class="lb-rank">1</td><td class="lb-name">Sevdalinka</td><td class="lb-pts">1500</td></tr>
@@ -46,13 +53,111 @@
     </table>
     <nav class="top-right-nav" aria-label="Secondary navigation">
       <a class="nav-btn" href="kontakt.html">Kontakt</a>
-      <a class="nav-btn" href="faq.html">FAQ</a>
     </nav>
     <div class="sm-corner">
       <img src="Assets/IG_TT-removebg-preview.png" alt="Social media links" />
       <a class="sm-link sm-instagram" href="https://www.instagram.com/catanliga_zagreb" target="_blank" rel="noopener" aria-label="Instagram"></a>
       <a class="sm-link sm-tiktok" href="https://www.tiktok.com/" target="_blank" rel="noopener" aria-label="TikTok"></a>
     </div>
+    <script>
+      (function() {
+        var FIREBASE_WAIT_TRIES = 80;
+        var FIREBASE_WAIT_MS = 125;
+        var countdownDisplay = document.getElementById('countdownDisplay');
+        var db = null;
+        var tournamentsCollection = null;
+        var countdownIntervalId = null;
+
+        function formatCountdown(days, hours, minutes, seconds) {
+          var pad = function(num) {
+            return num < 10 ? '0' + num : String(num);
+          };
+          return pad(days) + ':' + pad(hours) + ':' + pad(minutes) + ':' + pad(seconds);
+        }
+
+        function updateCountdown() {
+          if (!tournamentsCollection) {
+            return;
+          }
+
+          tournamentsCollection
+            .orderBy('date', 'asc')
+            .get()
+            .then(function(snapshot) {
+              var now = new Date();
+              var today = now.toISOString().split('T')[0];
+              var nextTournament = null;
+
+              snapshot.forEach(function(doc) {
+                var tournament = doc.data();
+                if (tournament.active !== false && tournament.date && tournament.time) {
+                  if (!nextTournament || tournament.date > today || (tournament.date === today && tournament.time > now.toLocaleTimeString('sv-SE').substring(0, 5))) {
+                    if (!nextTournament || tournament.date < nextTournament.date || (tournament.date === nextTournament.date && tournament.time < nextTournament.time)) {
+                      nextTournament = tournament;
+                    }
+                  }
+                }
+              });
+
+              if (nextTournament && nextTournament.date && nextTournament.time) {
+                var tournamentDateTime = new Date(nextTournament.date + 'T' + nextTournament.time);
+                var diff = tournamentDateTime - now;
+
+                if (diff > 0) {
+                  var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                  var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                  var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                  var seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+                  countdownDisplay.textContent = formatCountdown(days, hours, minutes, seconds);
+                } else {
+                  countdownDisplay.textContent = '00:00:00:00';
+                }
+              } else {
+                countdownDisplay.textContent = '--:--:--:--';
+              }
+            })
+            .catch(function(error) {
+              console.error('Greška pri dohvačanju turnira:', error);
+            });
+        }
+
+        function initFirebaseConnections() {
+          if (!window.firebase || !firebase.apps || !firebase.apps.length) {
+            return false;
+          }
+
+          db = firebase.firestore();
+          tournamentsCollection = db.collection('tournaments');
+          return true;
+        }
+
+        function waitForFirebaseAndSubscribe() {
+          var tries = 0;
+          var timer = setInterval(function() {
+            tries++;
+
+            if (initFirebaseConnections()) {
+              clearInterval(timer);
+              updateCountdown();
+              if (countdownIntervalId) {
+                clearInterval(countdownIntervalId);
+              }
+              countdownIntervalId = setInterval(updateCountdown, 1000);
+              return;
+            }
+
+            if (tries >= FIREBASE_WAIT_TRIES) {
+              clearInterval(timer);
+              console.warn('Firebase se nije učitao u dozvoljenom vremenu.');
+              countdownDisplay.textContent = 'Greška';
+            }
+          }, FIREBASE_WAIT_MS);
+        }
+
+        waitForFirebaseAndSubscribe();
+      })();
+    </script>
   </body>
 </html>
 
