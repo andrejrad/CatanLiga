@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Prijave</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=79" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+    <a href="admin.html" aria-label="Back to admin page">
+      <img class="logo-corner logo-clickable" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
+    </a>
+    <h1 class="page-title page-title-flow">Prijave</h1>
+    <div class="page-content">
+      <p class="admin-note">Pregled prijavljenih igrača po turniru.</p>
+
+      <div class="partner-filters" aria-label="Filter prijava">
+        <label class="form-field">
+          <span class="form-label">Filtriraj po turniru</span>
+          <select id="registrationsFilterTournament">
+            <option value="">Svi turniri</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Pretraži po imenu ili emailu</span>
+          <input id="registrationsSearch" type="text" placeholder="npr. Ivan ili email@domena.hr" />
+        </label>
+      </div>
+
+      <p id="registrationsStatus" class="form-status" aria-live="polite"></p>
+
+      <div id="registrationsList" class="tournament-list" aria-live="polite">
+        <p class="admin-note">Učitavanje prijava...</p>
+      </div>
+    </div>
+
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="admin-prijave.js?v=1"></script>
+  </body>
+</html>

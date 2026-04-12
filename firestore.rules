@@ -4,7 +4,9 @@ service cloud.firestore {
     match /adminPartners/{partnerId} {
       allow read: if true;
 
-      allow create, update, delete: if request.resource.data.keys().hasOnly([
+      allow delete: if true;
+
+      allow create, update: if request.resource.data.keys().hasOnly([
           'name',
           'logoUrl',
           'logoPath',
@@ -40,7 +42,9 @@ service cloud.firestore {
     match /adminTournaments/{tournamentId} {
       allow read: if true;
 
-      allow create, update, delete: if request.resource.data.keys().hasOnly([
+      allow delete: if true;
+
+      allow create, update: if request.resource.data.keys().hasOnly([
           'date',
           'venueId',
           'venueName',
@@ -117,6 +121,43 @@ service cloud.firestore {
         && request.resource.data.sponsorWeb is string
         && request.resource.data.sponsorWeb.size() > 0
         && request.resource.data.sponsorWeb.size() <= 240;
+    }
+
+    match /registrations/{registrationId} {
+      allow read: if true;
+
+      allow create: if request.resource.data.keys().hasOnly([
+          'firstName',
+          'lastName',
+          'email',
+          'tournamentId',
+          'tournamentLabel',
+          'note',
+          'consentAccepted',
+          'createdAt'
+        ])
+        && request.resource.data.firstName is string
+        && request.resource.data.firstName.size() > 0
+        && request.resource.data.firstName.size() <= 80
+        && request.resource.data.lastName is string
+        && request.resource.data.lastName.size() > 0
+        && request.resource.data.lastName.size() <= 80
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 5
+        && request.resource.data.email.size() <= 160
+        && request.resource.data.email.matches('^.+@.+\\..+$')
+        && request.resource.data.tournamentId is string
+        && request.resource.data.tournamentId.size() > 0
+        && request.resource.data.tournamentId.size() <= 120
+        && request.resource.data.tournamentLabel is string
+        && request.resource.data.tournamentLabel.size() > 0
+        && request.resource.data.tournamentLabel.size() <= 240
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 600
+        && request.resource.data.consentAccepted is bool
+        && request.resource.data.consentAccepted == true;
+
+      allow update, delete: if false;
     }
   }
 }
