@@ -4,13 +4,14 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Admin - Igrači</title>
+    <link rel="icon" type="image/png" href="Assets/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=82" />
+    <link rel="stylesheet" href="styles.css?v=83" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -66,9 +67,22 @@
       </div>
     </div>
 
+    <!-- Player Stats Modal -->
+    <div id="playerStatsModal" class="modal" style="display: none;">
+      <div class="modal-content modal-content-wide">
+        <h2 id="playerStatsName">Statistika igrača</h2>
+        <div id="playerStatsSummary" class="player-stats-summary"></div>
+        <div id="playerStatsTableWrap" class="player-stats-table"></div>
+        <div style="display: flex; justify-content: flex-end; margin-top: 20px;">
+          <button id="playerStatsClose" class="btn-secondary">Zatvori</button>
+        </div>
+      </div>
+    </div>
+
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
-    <script defer src="admin-igraci.js?v=2"></script>
+    <script defer src="admin-auth.js?v=1"></script>
+    <script defer src="admin-igraci.js?v=3"></script>
   </body>
 </html>

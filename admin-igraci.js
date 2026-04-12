@@ -14,6 +14,11 @@
   var deleteCancelBtn = document.getElementById('deleteConfirmCancel');
   var deleteYesBtn = document.getElementById('deleteConfirmYes');
   var deleteConfirmMessage = document.getElementById('deleteConfirmMessage');
+  var statsModal = document.getElementById('playerStatsModal');
+  var statsNameEl = document.getElementById('playerStatsName');
+  var statsSummaryEl = document.getElementById('playerStatsSummary');
+  var statsTableWrapEl = document.getElementById('playerStatsTableWrap');
+  var statsCloseBtn = document.getElementById('playerStatsClose');
 
   if (!listEl || !statusEl || !searchInput) {
     return;
@@ -21,6 +26,17 @@
 
   var allPlayers = [];
   var allRegistrations = [];
+  var allScores = [];
+  var allTournaments = [];
+  var registrationsById = {};
+  var bonusByPlace = {};
+  var scoreCoefficient = 0.5;
+  var statsLoadState = {
+    scores: false,
+    tournaments: false,
+    rules: false,
+    config: false
+  };
   var currentEditingEmail = null;
   var currentDeleteEmail = null;
   var deleteConfirmationStep = 0;
@@ -35,6 +51,288 @@
 
   function normalize(value) {
     return (value || '').toLowerCase().trim();
+  }
+
+  function formatPoints(value) {
+    return Number(value || 0).toFixed(2).replace(/\.00$/, '');
+  }
+
+  function getPlayerDisplayName(player) {
+    return ((player.firstName || '') + ' ' + (player.lastName || '')).trim() || player.email || 'Nepoznati igrač';
+  }
+
+  function createStatsPill(label, value) {
+    var box = document.createElement('div');
+    box.className = 'player-stats-pill';
+
+    var labelEl = document.createElement('span');
+    labelEl.className = 'player-stats-pill-label';
+    labelEl.textContent = label;
+
+    var valueEl = document.createElement('strong');
+    valueEl.className = 'player-stats-pill-value';
+    valueEl.textContent = value;
+
+    box.appendChild(labelEl);
+    box.appendChild(valueEl);
+    return box;
+  }
+
+  function getComputedPoints(score) {
+    if (typeof score.roundPoints === 'number') {
+      return score.roundPoints;
+    }
+
+    if (Number.isInteger(score.vp) && Number.isInteger(score.place)) {
+      var bonus = bonusByPlace[score.place] == null ? 0 : bonusByPlace[score.place];
+      return Number((score.vp * scoreCoefficient + bonus).toFixed(2));
+    }
+
+    return 0;
+  }
+
+  function getScorePlayerKey(score) {
+    var registration = registrationsById[score.registrationId] || null;
+    var email = normalize(registration ? registration.email : '');
+    return email || ('registration:' + (score.registrationId || score.id || 'unknown'));
+  }
+
+  function getScorePlayerName(score) {
+    var registration = registrationsById[score.registrationId] || null;
+    if (registration) {
+      var name = ((registration.firstName || '') + ' ' + (registration.lastName || '')).trim();
+      if (name) {
+        return name;
+      }
+      if (registration.email) {
+        return registration.email;
+      }
+    }
+    return score.playerName || 'Nepoznati igrač';
+  }
+
+  function compareByTieBreak(a, b) {
+    if (b.totalPoints !== a.totalPoints) {
+      return b.totalPoints - a.totalPoints;
+    }
+    if (b.wins !== a.wins) {
+      return b.wins - a.wins;
+    }
+    if (b.totalVp !== a.totalVp) {
+      return b.totalVp - a.totalVp;
+    }
+
+    var aLastPlace = Number.isInteger(a.lastPlace) ? a.lastPlace : Number.MAX_SAFE_INTEGER;
+    var bLastPlace = Number.isInteger(b.lastPlace) ? b.lastPlace : Number.MAX_SAFE_INTEGER;
+    if (aLastPlace !== bLastPlace) {
+      return aLastPlace - bLastPlace;
+    }
+
+    return a.playerName.localeCompare(b.playerName, 'hr', { sensitivity: 'base' });
+  }
+
+  function aggregateTournament(scoresForTournament) {
+    var totals = {};
+
+    scoresForTournament.forEach(function (score) {
+      var key = getScorePlayerKey(score);
+      if (!totals[key]) {
+        totals[key] = {
+          key: key,
+          playerName: getScorePlayerName(score),
+          totalPoints: 0,
+          wins: 0,
+          totalVp: 0,
+          lastPlace: null,
+          lastRound: -1
+        };
+      }
+
+      var round = Number(score.round || 0);
+      var place = score.place;
+
+      totals[key].totalPoints += getComputedPoints(score);
+      if (place === 1) {
+        totals[key].wins += 1;
+      }
+      if (Number.isInteger(score.vp)) {
+        totals[key].totalVp += score.vp;
+      }
+      if (round >= totals[key].lastRound && Number.isInteger(place)) {
+        totals[key].lastRound = round;
+        totals[key].lastPlace = place;
+      }
+    });
+
+    return Object.keys(totals)
+      .map(function (key) { return totals[key]; })
+      .sort(compareByTieBreak);
+  }
+
+  function formatTournamentLabel(tournament) {
+    if (!tournament) {
+      return 'Nepoznati turnir';
+    }
+    var date = tournament.date || '';
+    var time = tournament.time || '';
+    var venue = tournament.venueName || '';
+
+    if (!date && !time && !venue) {
+      return 'Nepoznati turnir';
+    }
+
+    return 'Kolo ' + (tournament.round || '-') + ' - ' + date + ' ' + time + (venue ? ' - ' + venue : '');
+  }
+
+  function getTournamentSortValue(tournamentId) {
+    var tournament = allTournaments.find(function (item) {
+      return item.id === tournamentId;
+    });
+
+    if (!tournament || !tournament.date || !tournament.time) {
+      return 0;
+    }
+
+    var dateTime = new Date(tournament.date + 'T' + tournament.time);
+    if (isNaN(dateTime.getTime())) {
+      return 0;
+    }
+
+    return dateTime.getTime();
+  }
+
+  function isStatsReady() {
+    return statsLoadState.scores && statsLoadState.tournaments && statsLoadState.rules && statsLoadState.config;
+  }
+
+  function openStatsModal(player) {
+    if (!statsModal || !statsNameEl || !statsSummaryEl || !statsTableWrapEl) {
+      return;
+    }
+
+    var playerName = getPlayerDisplayName(player);
+    statsNameEl.textContent = 'Statistika: ' + playerName;
+    statsSummaryEl.innerHTML = '';
+    statsTableWrapEl.innerHTML = '';
+
+    if (!isStatsReady()) {
+      statsTableWrapEl.appendChild(createMessage('Statistika se još učitava. Pokušaj ponovno za nekoliko sekundi.'));
+      statsModal.style.display = 'flex';
+      return;
+    }
+
+    var playerKey = normalize(player.email);
+    var scoresByTournament = {};
+
+    allScores.forEach(function (score) {
+      if (getScorePlayerKey(score) !== playerKey) {
+        return;
+      }
+
+      var tournamentId = score.tournamentId || 'unknown';
+      if (!scoresByTournament[tournamentId]) {
+        scoresByTournament[tournamentId] = true;
+      }
+    });
+
+    var tournamentIds = Object.keys(scoresByTournament);
+    var rows = tournamentIds
+      .map(function (tournamentId) {
+        var tournamentScores = allScores.filter(function (score) {
+          return score.tournamentId === tournamentId;
+        });
+
+        var ranking = aggregateTournament(tournamentScores);
+        var playerIndex = ranking.findIndex(function (item) {
+          return item.key === playerKey;
+        });
+
+        if (playerIndex === -1) {
+          return null;
+        }
+
+        var tournament = allTournaments.find(function (item) {
+          return item.id === tournamentId;
+        }) || null;
+
+        return {
+          tournamentId: tournamentId,
+          tournamentLabel: formatTournamentLabel(tournament),
+          place: playerIndex + 1,
+          totalPoints: ranking[playerIndex].totalPoints,
+          sortValue: getTournamentSortValue(tournamentId)
+        };
+      })
+      .filter(function (item) {
+        return !!item;
+      })
+      .sort(function (a, b) {
+        return a.sortValue - b.sortValue;
+      });
+
+    var totalTournaments = rows.length;
+    var totalPoints = rows.reduce(function (sum, item) {
+      return sum + item.totalPoints;
+    }, 0);
+
+    statsSummaryEl.appendChild(createStatsPill('Ukupno odigranih turnira', String(totalTournaments)));
+    statsSummaryEl.appendChild(createStatsPill('Ukupno osvojenih bodova', formatPoints(totalPoints)));
+
+    if (!rows.length) {
+      statsTableWrapEl.appendChild(createMessage('Igrač još nema evidentirane rezultate turnira.'));
+      statsModal.style.display = 'flex';
+      return;
+    }
+
+    var tableWrap = document.createElement('div');
+    tableWrap.className = 'tournament-table-wrap';
+
+    var table = document.createElement('table');
+    table.className = 'tournament-table';
+
+    var thead = document.createElement('thead');
+    var headRow = document.createElement('tr');
+    ['Turnir', 'Mjesto', 'Bodovi'].forEach(function (label) {
+      var th = document.createElement('th');
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+
+    var tbody = document.createElement('tbody');
+    rows.forEach(function (item) {
+      var row = document.createElement('tr');
+
+      var tdTournament = document.createElement('td');
+      tdTournament.textContent = item.tournamentLabel;
+
+      var tdPlace = document.createElement('td');
+      tdPlace.textContent = String(item.place) + '.';
+      tdPlace.style.textAlign = 'center';
+
+      var tdPoints = document.createElement('td');
+      tdPoints.textContent = formatPoints(item.totalPoints);
+      tdPoints.style.textAlign = 'right';
+
+      row.appendChild(tdTournament);
+      row.appendChild(tdPlace);
+      row.appendChild(tdPoints);
+      tbody.appendChild(row);
+    });
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    tableWrap.appendChild(table);
+    statsTableWrapEl.appendChild(tableWrap);
+
+    statsModal.style.display = 'flex';
+  }
+
+  function closeStatsModal() {
+    if (!statsModal) {
+      return;
+    }
+    statsModal.style.display = 'none';
   }
 
   function renderPlayers() {
@@ -79,6 +377,24 @@
 
     filtered.forEach(function (player) {
       var row = document.createElement('tr');
+      row.className = 'player-row-clickable';
+      row.title = 'Klikni za statistiku igrača';
+      row.tabIndex = 0;
+      row.addEventListener('click', function (event) {
+        if (event.target && event.target.closest && event.target.closest('button')) {
+          return;
+        }
+        openStatsModal(player);
+      });
+      row.addEventListener('keydown', function (event) {
+        if (event.target !== row) {
+          return;
+        }
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openStatsModal(player);
+        }
+      });
 
       var tdFirst = document.createElement('td');
       tdFirst.textContent = player.firstName;
@@ -98,6 +414,21 @@
       tdActions.style.textAlign = 'center';
       tdActions.style.whiteSpace = 'nowrap';
 
+      var statsBtn = document.createElement('button');
+      statsBtn.className = 'btn-icon';
+      statsBtn.title = 'Prikaži statistiku';
+      statsBtn.setAttribute('aria-label', 'Prikaži statistiku igrača');
+      statsBtn.innerHTML =
+        '<svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false" style="display:block; margin:auto;" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+        + '<line x1="5" y1="20" x2="5" y2="10"></line>'
+        + '<line x1="12" y1="20" x2="12" y2="4"></line>'
+        + '<line x1="19" y1="20" x2="19" y2="13"></line>'
+        + '</svg>';
+      statsBtn.style.marginRight = '8px';
+      statsBtn.addEventListener('click', function () {
+        openStatsModal(player);
+      });
+
       var editBtn = document.createElement('button');
       editBtn.className = 'btn-icon';
       editBtn.title = 'Uredi igrača';
@@ -116,6 +447,7 @@
         openDeleteConfirm(player);
       });
 
+      tdActions.appendChild(statsBtn);
       tdActions.appendChild(editBtn);
       tdActions.appendChild(deleteBtn);
 
@@ -316,6 +648,16 @@
   editCancelBtn.addEventListener('click', closeEditModal);
   editSaveBtn.addEventListener('click', savePlayerEdit);
   deleteCancelBtn.addEventListener('click', closeDeleteConfirm);
+  if (statsCloseBtn) {
+    statsCloseBtn.addEventListener('click', closeStatsModal);
+  }
+  if (statsModal) {
+    statsModal.addEventListener('click', function (event) {
+      if (event.target === statsModal) {
+        closeStatsModal();
+      }
+    });
+  }
   deleteYesBtn.addEventListener('click', function () {
     if (deleteConfirmationStep === 1) {
       var player = allPlayers.find(function (p) {
@@ -333,6 +675,7 @@
     if (e.key === 'Escape') {
       closeEditModal();
       closeDeleteConfirm();
+      closeStatsModal();
     }
   });
 
@@ -346,6 +689,11 @@
           return Object.assign({ id: doc.id }, doc.data());
         });
 
+        registrationsById = {};
+        allRegistrations.forEach(function (registration) {
+          registrationsById[registration.id] = registration;
+        });
+
         allPlayers = buildPlayerList(allRegistrations);
         renderPlayers();
       },
@@ -353,6 +701,62 @@
         console.error(error);
         listEl.innerHTML = '';
         listEl.appendChild(createMessage('Greška pri učitavanju igrača.'));
+      }
+    );
+
+    db.collection('adminRoundScores').onSnapshot(
+      function (snapshot) {
+        allScores = snapshot.docs.map(function (doc) {
+          return Object.assign({ id: doc.id }, doc.data());
+        });
+        statsLoadState.scores = true;
+      },
+      function (error) {
+        console.error('Greška pri učitavanju bodova igrača:', error);
+      }
+    );
+
+    db.collection('adminTournaments').onSnapshot(
+      function (snapshot) {
+        allTournaments = snapshot.docs.map(function (doc) {
+          return Object.assign({ id: doc.id }, doc.data());
+        });
+        statsLoadState.tournaments = true;
+      },
+      function (error) {
+        console.error('Greška pri učitavanju turnira:', error);
+      }
+    );
+
+    db.collection('adminScoreRules').onSnapshot(
+      function (snapshot) {
+        bonusByPlace = {};
+        snapshot.forEach(function (doc) {
+          var data = doc.data() || {};
+          if (Number.isInteger(data.place) && Number.isInteger(data.points)) {
+            bonusByPlace[data.place] = data.points;
+          }
+        });
+        statsLoadState.rules = true;
+      },
+      function (error) {
+        console.error('Greška pri učitavanju pravila bodovanja:', error);
+      }
+    );
+
+    db.collection('adminScoreConfig').doc('global').onSnapshot(
+      function (doc) {
+        scoreCoefficient = 0.5;
+        if (doc.exists) {
+          var config = doc.data() || {};
+          if (typeof config.gamePointsCoefficient === 'number' && config.gamePointsCoefficient >= 0) {
+            scoreCoefficient = config.gamePointsCoefficient;
+          }
+        }
+        statsLoadState.config = true;
+      },
+      function (error) {
+        console.error('Greška pri učitavanju koeficijenta bodovanja:', error);
       }
     );
   });

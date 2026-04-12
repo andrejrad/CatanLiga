@@ -3,20 +3,26 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin - Vladari Catana</title>
+    <title>Admin - Catan Liga Zagreb</title>
+    <link rel="icon" type="image/png" href="Assets/favicon.png" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=74" />
+    <link rel="stylesheet" href="styles.css?v=84" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
     <a href="index.html" aria-label="Back to landing page">
       <img class="logo-corner logo-clickable" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
     </a>
+    <button class="btn-logout" id="btnLogout" onclick="(function(){
+      sessionStorage.removeItem('adminUnlocked');
+      sessionStorage.removeItem('adminUnlockedAt');
+      window.location.href='index.html';
+    })()">Odjava</button>
     <h1 class="page-title page-title-flow">Admin</h1>
     <div class="page-content">
       <p class="admin-note">Odaberi modul za upravljanje sadržajem i podacima stranice.</p>
@@ -30,7 +36,12 @@
         <a class="admin-card" href="admin-bodovi.html">Pravila Bodovanja</a>
         <a class="admin-card" href="admin-upis-bodova.html">Upis Bodova Igrača</a>
         <a class="admin-card" href="admin-raspored-stolova.html">Raspored Stolova</a>
+        <a class="admin-card" href="admin-lozinka.html">Promjena Lozinke</a>
       </div>
     </div>
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="admin-auth.js?v=1"></script>
   </body>
 </html>
