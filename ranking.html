@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=74" />
+    <link rel="stylesheet" href="styles.css?v=81" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -23,6 +23,39 @@
     </a>
     <h1 class="page-title page-title-flow">Leaderboard</h1>
     <div class="page-content">
+      <section class="bodovanje-tabs" aria-label="Leaderboard sekcije">
+        <div class="bodovanje-tablist" role="tablist" aria-label="Leaderboard tabovi">
+          <button class="bodovanje-tab is-active" id="tab-liga-ranking" type="button" role="tab" aria-selected="true" aria-controls="panel-liga-ranking" data-tab-target="panel-liga-ranking">
+            Liga
+          </button>
+          <button class="bodovanje-tab" id="tab-turnir-ranking" type="button" role="tab" aria-selected="false" aria-controls="panel-turnir-ranking" data-tab-target="panel-turnir-ranking" tabindex="-1">
+            Turnir
+          </button>
+        </div>
+
+        <article class="bodovanje-panel is-active" id="panel-liga-ranking" role="tabpanel" aria-labelledby="tab-liga-ranking">
+          <p id="rankingLigaStatus" class="form-status" aria-live="polite"></p>
+          <div id="rankingLigaList" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Učitavanje ligaškog poretka...</p>
+          </div>
+        </article>
+
+        <article class="bodovanje-panel" id="panel-turnir-ranking" role="tabpanel" aria-labelledby="tab-turnir-ranking" hidden>
+          <div class="partner-filters" aria-label="Odabir turnira za poredak">
+            <label class="form-field">
+              <span class="form-label">Turnir</span>
+              <select id="rankingTournamentSelect">
+                <option value="">Učitavanje turnira...</option>
+              </select>
+            </label>
+          </div>
+          <p id="rankingTurnirStatus" class="form-status" aria-live="polite"></p>
+          <div id="rankingTurnirList" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Odaberi turnir za prikaz poretka.</p>
+          </div>
+        </article>
+      </section>
+
       <div class="page-cta-row" aria-label="Quick actions">
         <a class="page-cta-btn" href="prijava.html">Prijava</a>
         <a class="page-cta-btn" href="ranking.html">Leaderboard</a>
@@ -32,5 +65,10 @@
         <a class="nav-btn" href="kontakt.html">Kontakt</a>
       </div>
     </div>
+
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="ranking.js?v=1"></script>
   </body>
 </html>

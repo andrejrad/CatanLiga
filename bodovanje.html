@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=74" />
+    <link rel="stylesheet" href="styles.css?v=81" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -28,7 +28,7 @@
           <button class="bodovanje-tab is-active" id="tab-kolo" type="button" role="tab" aria-selected="true" aria-controls="panel-kolo" data-tab-target="panel-kolo">
             BODOVANJE POJEDINAČNOG KOLA
           </button>
-          <button class="bodovanje-tab" id="tab-liga" type="button" role="tab" aria-selected="false" aria-controls="panel-liga" data-tab-target="panel-liga" tabindex="-1">
+          <button class="bodovanje-tab" id="tab-liga" type="button" role="tab" aria-selected="false" aria-controls="panel-liga" data-tab-target="panel-liga" tabindex="-1" hidden>
             BODOVANJE LIGE
           </button>
           <button class="bodovanje-tab" id="tab-ukupni" type="button" role="tab" aria-selected="false" aria-controls="panel-ukupni" data-tab-target="panel-ukupni" tabindex="-1">
@@ -48,7 +48,7 @@
             <li>Runda 3 - raspored igrača posložen prema rankingu kola</li>
           </ul>
           <p class="page-paragraph">Nakon svake runde rezultati se upisuju u tablicu, a svi se bodovi zbrajaju u ukupni poredak kola.</p>
-          <p class="page-paragraph">Za razliku od cijele lige, bodovi za poredak pojedinačnog kola ne uključuju Kahoot bonus. Dakle, svaka runda donosi ti bodove iz same igre * 0,5, a zatim i dodatni bonus prema plasmanu nakon svake partije.</p>
+          <p id="bodovanjeKoloCoefText" class="page-paragraph">Dakle, svaka runda donosi ti bodove iz same igre * 0,5, a zatim i dodatni bonus prema plasmanu nakon svake partije.</p>
 
           <div class="bodovanje-table-wrap" role="region" aria-label="Bonus bodovi za plasman">
             <table class="bodovanje-table">
@@ -58,7 +58,7 @@
                   <th scope="col">Bonus bodovi</th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody id="bodovanjeBonusTableBody">
                 <tr>
                   <td>1. mjesto</td>
                   <td>+4</td>
@@ -79,8 +79,8 @@
             </table>
           </div>
 
-          <p class="page-paragraph"><strong>Formula bodovanja za pojedinačno kolo:</strong> bodovi iz igre * 0,5 + bonus bodovi za plasman</p>
-          <p class="page-paragraph"><strong>Primjer bodovanja:</strong><br />Ako završiš partiju s 8 bodova i budeš 2. za stolom, za tu rundu osvajaš: 8*0,5 + 2 = 6 bodova</p>
+          <p id="bodovanjeKoloFormulaText" class="page-paragraph"><strong>Formula bodovanja za pojedinačno kolo:</strong> bodovi iz igre * 0,5 + bonus bodovi za plasman</p>
+          <p id="bodovanjeKoloExampleText" class="page-paragraph"><strong>Primjer bodovanja:</strong><br />Ako završiš partiju s 8 bodova i budeš 2. za stolom, za tu rundu osvajaš: 8*0,5 + 2 = 6 bodova</p>
         </article>
 
         <article class="bodovanje-panel" id="panel-liga" role="tabpanel" aria-labelledby="tab-liga" hidden>
@@ -90,17 +90,13 @@
 
           <h2 class="about-heading">Bodovi iz igre</h2>
           <p class="page-paragraph">Svaka runda donosi ti bodove iz same igre.</p>
-          <p class="page-paragraph">Pobjednički bodovi (VP) osvojeni u partiji * 0,5</p>
+          <p id="bodovanjeLigaCoefText" class="page-paragraph">Pobjednički bodovi (VP) osvojeni u partiji * 0,5</p>
 
           <h2 class="about-heading">Bonus bodovi za plasman</h2>
           <p class="page-paragraph">Na kraju svake runde dobivaš dodatne bodove ovisno o tome koje si mjesto zauzeo.</p>
           <p class="page-paragraph">🥇 1. mjesto: +4 boda<br>🥈 2. mjesto: +2 boda<br>🥉 3. mjesto: +1 bod<br>4. mjesto: 0 bodova</p>
 
-          <h2 class="about-heading">Kahoot bonus</h2>
-          <p class="page-paragraph">Na kraju večeri pobjednik Kahoota osvaja dodatni +1 bod za ligu.</p>
-          <p class="page-paragraph">🥇 pobjednik kviza: +1 bod u ligi</p>
-
-          <p class="page-paragraph"><strong>Formula bodovanja za poredak lige:</strong> bodovi iz igre * 0,5 + bonus bodovi za plasman + Kahoot bonus</p>
+          <p id="bodovanjeLigaFormulaText" class="page-paragraph"><strong>Formula bodovanja za poredak lige:</strong> bodovi iz igre * 0,5 + bonus bodovi za plasman</p>
         </article>
 
         <article class="bodovanje-panel" id="panel-ukupni" role="tabpanel" aria-labelledby="tab-ukupni" hidden>
@@ -125,11 +121,6 @@
             <section class="faq-item">
               <h2 class="about-heading">Računa li se samo pobjeda?</h2>
               <p class="page-paragraph">Ne. Računa se svaki pobjednički bod (VP) koji osvojiš, a plasman ti donosi dodatan bonus.</p>
-            </section>
-
-            <section class="faq-item">
-              <h2 class="about-heading">Koliko bodova nosi Kahoot?</h2>
-              <p class="page-paragraph">Pobjednik Kahoota osvaja +1 bod za poredak u ligi te dobiva besplatnu kotizaciju za sljedeće kolo.</p>
             </section>
 
             <section class="faq-item">
@@ -162,7 +153,7 @@
 
     <script>
       (function () {
-        var tabButtons = document.querySelectorAll('.bodovanje-tab');
+        var tabButtons = document.querySelectorAll('.bodovanje-tab:not([hidden])');
         var tabPanels = document.querySelectorAll('.bodovanje-panel');
 
         function activateTab(button) {
@@ -214,5 +205,9 @@
         });
       })();
     </script>
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="bodovanje.js?v=1"></script>
   </body>
 </html>

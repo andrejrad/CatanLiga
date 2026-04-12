@@ -1,0 +1,115 @@
+<!doctype html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Upis Bodova Igrača</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=81" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+    <a href="admin.html" aria-label="Back to admin page">
+      <img class="logo-corner logo-clickable" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
+    </a>
+    <h1 class="page-title page-title-flow">Upis Bodova Igrača</h1>
+    <div class="page-content">
+      <p class="admin-note">Odaberi turnir i upiši Mjesto i VP po rundama.</p>
+
+      <div class="partner-filters" aria-label="Odabir turnira">
+        <label class="form-field">
+          <span class="form-label">Turnir</span>
+          <select id="scoreTournamentSelect">
+            <option value="">Učitavanje turnira...</option>
+          </select>
+        </label>
+      </div>
+
+      <p id="scoreEntryStatus" class="form-status" aria-live="polite"></p>
+
+      <section class="bodovanje-tabs" aria-label="Runde upisa bodova">
+        <div class="bodovanje-tablist" role="tablist" aria-label="Tabovi rundi">
+          <button class="bodovanje-tab is-active" id="tab-score-r1" type="button" role="tab" aria-selected="true" aria-controls="panel-score-r1" data-tab-target="panel-score-r1">Runda 1</button>
+          <button class="bodovanje-tab" id="tab-score-r2" type="button" role="tab" aria-selected="false" aria-controls="panel-score-r2" data-tab-target="panel-score-r2" tabindex="-1">Runda 2</button>
+          <button class="bodovanje-tab" id="tab-score-r3" type="button" role="tab" aria-selected="false" aria-controls="panel-score-r3" data-tab-target="panel-score-r3" tabindex="-1">Runda 3</button>
+        </div>
+
+        <article class="bodovanje-panel is-active" id="panel-score-r1" role="tabpanel" aria-labelledby="tab-score-r1">
+          <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 1">
+            <button id="scoreRound1SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 1</button>
+            <button id="scoreRound1ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+          </div>
+          <div class="partner-filters" aria-label="Filter runde 1">
+            <label class="form-field">
+              <span class="form-label">Filtriraj po broju stola</span>
+              <select id="scoreRound1TableFilter">
+                <option value="">Svi stolovi</option>
+              </select>
+            </label>
+          </div>
+          <div id="scoreRound1List" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Odaberi turnir za prikaz tablice.</p>
+          </div>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 1">
+            <button id="scoreRound1LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+          </div>
+          <p id="scoreRound1LockStatus" class="form-status" aria-live="polite"></p>
+        </article>
+
+        <article class="bodovanje-panel" id="panel-score-r2" role="tabpanel" aria-labelledby="tab-score-r2" hidden>
+          <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 2">
+            <button id="scoreRound2SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 2</button>
+            <button id="scoreRound2ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+          </div>
+          <div class="partner-filters" aria-label="Filter runde 2">
+            <label class="form-field">
+              <span class="form-label">Filtriraj po broju stola</span>
+              <select id="scoreRound2TableFilter">
+                <option value="">Svi stolovi</option>
+              </select>
+            </label>
+          </div>
+          <div id="scoreRound2List" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Odaberi turnir za prikaz tablice.</p>
+          </div>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 2">
+            <button id="scoreRound2LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+          </div>
+          <p id="scoreRound2LockStatus" class="form-status" aria-live="polite"></p>
+        </article>
+
+        <article class="bodovanje-panel" id="panel-score-r3" role="tabpanel" aria-labelledby="tab-score-r3" hidden>
+          <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 3">
+            <button id="scoreRound3SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 3</button>
+            <button id="scoreRound3ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+          </div>
+          <div class="partner-filters" aria-label="Filter runde 3">
+            <label class="form-field">
+              <span class="form-label">Filtriraj po broju stola</span>
+              <select id="scoreRound3TableFilter">
+                <option value="">Svi stolovi</option>
+              </select>
+            </label>
+          </div>
+          <div id="scoreRound3List" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Odaberi turnir za prikaz tablice.</p>
+          </div>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 3">
+            <button id="scoreRound3LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+          </div>
+          <p id="scoreRound3LockStatus" class="form-status" aria-live="polite"></p>
+        </article>
+      </section>
+    </div>
+
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="admin-upis-bodova.js?v=2"></script>
+  </body>
+</html>

@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=79" />
+    <link rel="stylesheet" href="styles.css?v=81" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -19,7 +19,56 @@
     </a>
     <h1 class="page-title page-title-flow">Prijave</h1>
     <div class="page-content">
-      <p class="admin-note">Pregled prijavljenih igrača po turniru.</p>
+      <p class="admin-note">Admin modul za pregled, dodavanje, uređivanje i brisanje prijava.</p>
+
+      <div class="page-cta-row page-cta-row-left" aria-label="Akcije prijava">
+        <button id="registrationsExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+      </div>
+
+      <form id="registrationAdminForm" class="admin-form" novalidate>
+        <label class="form-field">
+          <span class="form-label">Ime</span>
+          <input id="registrationFirstName" name="firstName" type="text" autocomplete="given-name" required />
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Prezime</span>
+          <input id="registrationLastName" name="lastName" type="text" autocomplete="family-name" required />
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Email</span>
+          <input id="registrationEmail" name="email" type="email" autocomplete="email" required />
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Odabir turnira</span>
+          <select id="registrationTournament" name="tournament" required>
+            <option value="">Učitavanje aktivnih turnira...</option>
+          </select>
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Napomena</span>
+          <span class="field-note">Ako dolaziš s ekipom s kojom zelis igrati, navedi njihova puna imena - oni se također moraju prijaviti.</span>
+          <textarea id="registrationNote" name="note" rows="4" maxlength="600"></textarea>
+        </label>
+
+        <fieldset class="checkbox-group registration-consent">
+          <label>
+            <input id="registrationConsent" name="consent" type="checkbox" required />
+            Prihvaćam
+            <a class="contact-link" href="uvjeti-koristenja.html" target="_blank" rel="noopener">Pravila Korištenja</a>
+            i
+            <a class="contact-link" href="politika-privatnosti.html" target="_blank" rel="noopener">Politiku Privatnosti</a>.
+          </label>
+        </fieldset>
+
+        <div class="page-cta-row page-cta-row-left">
+          <button id="registrationSubmitBtn" class="page-cta-btn" type="submit">Dodaj prijavu</button>
+          <button id="registrationCancelEdit" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Odustani</button>
+        </div>
+      </form>
 
       <div class="partner-filters" aria-label="Filter prijava">
         <label class="form-field">
@@ -45,6 +94,6 @@
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
-    <script defer src="admin-prijave.js?v=1"></script>
+    <script defer src="admin-prijave.js?v=4"></script>
   </body>
 </html>

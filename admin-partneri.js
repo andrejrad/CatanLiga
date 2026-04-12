@@ -128,6 +128,43 @@
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  async function deletePartner(partnerData) {
+    if (!partnersCollection || !storage) {
+      setStatus('Firebase nije spreman. Pokušaj ponovno.', true);
+      return;
+    }
+
+    var confirmed = window.confirm('Obrisati partnera "' + (partnerData.name || '') + '"?');
+    if (!confirmed) {
+      return;
+    }
+
+    setStatus('Brisanje partnera u tijeku...', false);
+
+    try {
+      if (partnerData.logoPath) {
+        await storage.ref().child(partnerData.logoPath).delete().catch(function (error) {
+          if (error && error.code === 'storage/object-not-found') {
+            return;
+          }
+          throw error;
+        });
+      }
+
+      await partnersCollection.doc(partnerData.id).delete();
+
+      if (editingPartnerId === partnerData.id) {
+        form.reset();
+        resetEditMode();
+      }
+
+      setStatus('Partner je uspješno obrisan.', false);
+    } catch (error) {
+      console.error(error);
+      setStatus('Brisanje partnera nije uspjelo.', true);
+    }
+  }
+
   function renderPartner(data) {
     var card = document.createElement('article');
     card.className = 'partner-card';
@@ -144,29 +181,38 @@
     var title = document.createElement('h3');
     title.textContent = data.name;
 
-    var contact = document.createElement('p');
-    contact.className = 'partner-meta';
-    contact.textContent = 'Kontakt: ' + data.contact;
+    var contact = null;
+    if (data.contact) {
+      contact = document.createElement('p');
+      contact.className = 'partner-meta';
+      contact.textContent = 'Kontakt: ' + data.contact;
+    }
 
-    var web = document.createElement('p');
-    web.className = 'partner-meta';
-    web.textContent = 'Web: ';
+    var web = null;
+    if (data.web) {
+      web = document.createElement('p');
+      web.className = 'partner-meta';
+      web.textContent = 'Web: ';
 
-    var webLink = document.createElement('a');
-    webLink.href = normalizeWebUrl(data.web || '');
-    webLink.target = '_blank';
-    webLink.rel = 'noopener';
-    webLink.className = 'contact-link';
-    webLink.textContent = data.web || '';
-    web.appendChild(webLink);
+      var webLink = document.createElement('a');
+      webLink.href = normalizeWebUrl(data.web || '');
+      webLink.target = '_blank';
+      webLink.rel = 'noopener';
+      webLink.className = 'contact-link';
+      webLink.textContent = data.web || '';
+      web.appendChild(webLink);
+    }
 
     var types = document.createElement('p');
     types.className = 'partner-meta';
     types.textContent = 'Tip partnera: ' + (data.types || []).join(', ');
 
-    var description = document.createElement('p');
-    description.className = 'partner-meta';
-    description.textContent = data.description;
+    var description = null;
+    if (data.description) {
+      description = document.createElement('p');
+      description.className = 'partner-meta';
+      description.textContent = data.description;
+    }
 
     var state = document.createElement('p');
     state.className = 'partner-meta';
@@ -209,14 +255,29 @@
       }
     });
 
+    var deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.className = 'partner-action-btn partner-action-btn-danger';
+    deleteButton.textContent = 'Obriši';
+    deleteButton.addEventListener('click', function () {
+      deletePartner(data);
+    });
+
     body.appendChild(title);
-    body.appendChild(contact);
-    body.appendChild(web);
+    if (contact) {
+      body.appendChild(contact);
+    }
+    if (web) {
+      body.appendChild(web);
+    }
     body.appendChild(types);
     body.appendChild(state);
-    body.appendChild(description);
+    if (description) {
+      body.appendChild(description);
+    }
     actions.appendChild(editButton);
     actions.appendChild(toggleButton);
+    actions.appendChild(deleteButton);
     body.appendChild(actions);
 
     card.appendChild(image);
@@ -320,21 +381,6 @@
 
     if (logoFile && logoFile.size > MAX_LOGO_SIZE_BYTES) {
       setStatus('Logo je prevelik. Maksimalna veličina je 10MB.', true);
-      return;
-    }
-
-    if (!contact) {
-      setStatus('Polje Kontakt je obavezno.', true);
-      return;
-    }
-
-    if (!web) {
-      setStatus('Polje Web je obavezno.', true);
-      return;
-    }
-
-    if (!description) {
-      setStatus('Polje Kratki opis je obavezno.', true);
       return;
     }
 

@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin - Raspored Stolova</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=81" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+    <a href="admin.html" aria-label="Back to admin page">
+      <img class="logo-corner logo-clickable" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
+    </a>
+    <h1 class="page-title page-title-flow">Raspored Stolova</h1>
+    <div class="page-content">
+      <p class="admin-note">Odaberi turnir i unesi raspored stolova po rundama.</p>
+
+      <div class="partner-filters" aria-label="Odabir turnira">
+        <label class="form-field">
+          <span class="form-label">Turnir</span>
+          <select id="tableTournamentSelect">
+            <option value="">Učitavanje turnira...</option>
+          </select>
+        </label>
+      </div>
+
+      <p id="tablePlanStatus" class="form-status" aria-live="polite"></p>
+
+      <section class="bodovanje-tabs" aria-label="Runde rasporeda stolova">
+        <div class="bodovanje-tablist" role="tablist" aria-label="Tabovi rundi">
+          <button class="bodovanje-tab is-active" id="tab-runda-1" type="button" role="tab" aria-selected="true" aria-controls="panel-runda-1" data-tab-target="panel-runda-1">Runda 1</button>
+          <button class="bodovanje-tab" id="tab-runda-2" type="button" role="tab" aria-selected="false" aria-controls="panel-runda-2" data-tab-target="panel-runda-2" tabindex="-1">Runda 2</button>
+          <button class="bodovanje-tab" id="tab-runda-3" type="button" role="tab" aria-selected="false" aria-controls="panel-runda-3" data-tab-target="panel-runda-3" tabindex="-1">Runda 3</button>
+        </div>
+
+        <article class="bodovanje-panel is-active" id="panel-runda-1" role="tabpanel" aria-labelledby="tab-runda-1">
+          <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 1">
+            <button id="round1SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 1</button>
+            <button id="round1ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+          </div>
+          <div class="partner-filters" aria-label="Filter runde 1">
+            <label class="form-field">
+              <span class="form-label">Filtriraj po broju stola</span>
+              <select id="round1TableFilter">
+                <option value="">Svi stolovi</option>
+              </select>
+            </label>
+          </div>
+          <div id="round1List" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Odaberi turnir za prikaz prijavljenih igrača.</p>
+          </div>
+          <h2 class="about-heading"><strong>Sažetak po stolovima</strong></h2>
+          <div id="round1Summary" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Sažetak će biti prikazan nakon odabira turnira.</p>
+          </div>
+        </article>
+
+        <article class="bodovanje-panel" id="panel-runda-2" role="tabpanel" aria-labelledby="tab-runda-2" hidden>
+          <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 2">
+            <button id="round2RandomBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Nasumični raspored</button>
+            <button id="round2SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 2</button>
+            <button id="round2ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+          </div>
+          <div class="partner-filters" aria-label="Filter runde 2">
+            <label class="form-field">
+              <span class="form-label">Filtriraj po broju stola</span>
+              <select id="round2TableFilter">
+                <option value="">Svi stolovi</option>
+              </select>
+            </label>
+          </div>
+          <div id="round2List" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Odaberi turnir za prikaz prijavljenih igrača.</p>
+          </div>
+          <h2 class="about-heading"><strong>Sažetak po stolovima</strong></h2>
+          <div id="round2Summary" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Sažetak će biti prikazan nakon odabira turnira.</p>
+          </div>
+        </article>
+
+        <article class="bodovanje-panel" id="panel-runda-3" role="tabpanel" aria-labelledby="tab-runda-3" hidden>
+          <p class="admin-note">Runda 3 će biti dodana kasnije.</p>
+        </article>
+      </section>
+    </div>
+
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="admin-raspored-stolova.js?v=3"></script>
+  </body>
+</html>

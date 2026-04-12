@@ -7,14 +7,21 @@
   var venueSelect = document.getElementById('tournamentVenue');
   var timeInput = document.getElementById('tournamentTime');
   var roundInput = document.getElementById('tournamentRound');
+  var registrationCloseHoursInput = document.getElementById('tournamentRegistrationCloseHours');
   var statusEl = document.getElementById('tournamentFormStatus');
   var listEl = document.getElementById('tournamentList');
   var filterRoundSelect = document.getElementById('tournamentFilterRound');
   var filterVenueSelect = document.getElementById('tournamentFilterVenue');
   var submitButton = document.getElementById('tournamentSubmitBtn');
   var cancelEditButton = document.getElementById('tournamentCancelEdit');
+  var deleteModal = document.getElementById('tournamentDeleteConfirmModal');
+  var deleteModalMessage = document.getElementById('tournamentDeleteConfirmMessage');
+  var deleteModalCancel = document.getElementById('tournamentDeleteConfirmCancel');
+  var deleteModalYes = document.getElementById('tournamentDeleteConfirmYes');
 
   var editingTournamentId = null;
+  var currentDeletingTournament = null;
+  var deleteConfirmationStep = 0;
 
   var db = null;
   var partnersCollection = null;
@@ -22,7 +29,7 @@
   var allPartners = [];
   var allTournaments = [];
 
-  if (!form || !dateInput || !venueSelect || !timeInput || !roundInput || !statusEl || !listEl) {
+  if (!form || !dateInput || !venueSelect || !timeInput || !roundInput || !registrationCloseHoursInput || !statusEl || !listEl) {
     return;
   }
 
@@ -55,6 +62,7 @@
     dateInput.value = item.date || '';
     timeInput.value = item.time || '';
     roundInput.value = item.round || '';
+    registrationCloseHoursInput.value = String(item.registrationCloseHours == null ? 0 : item.registrationCloseHours);
     venueSelect.value = item.venueId || '';
 
     if (submitButton) {
@@ -66,6 +74,91 @@
 
     setStatus('Uređivanje turnira: kolo ' + item.round + '.', false);
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function deleteTournament(item) {
+    if (!tournamentsCollection) {
+      setStatus('Firebase nije spreman. Pokušaj ponovno.', true);
+      return;
+    }
+
+    currentDeletingTournament = item;
+    deleteConfirmationStep = 0;
+    showDeleteConfirmStep1(item);
+  }
+
+  function showDeleteConfirmStep1(item) {
+    deleteConfirmationStep = 1;
+    deleteModalMessage.textContent =
+      'Jeste li sigurni da želite izbrisati turnir za kolo ' +
+      item.round +
+      ' (' +
+      formatDate(item.date, false) +
+      ' ' +
+      (item.time || '') +
+      ')? Ova akcija će izbrisati sve bodove svih igrača s tog turnira.';
+    deleteModalYes.textContent = 'Obriši';
+    deleteModal.style.display = 'flex';
+  }
+
+  function showDeleteConfirmStep2(item) {
+    deleteConfirmationStep = 2;
+    deleteModalMessage.textContent =
+      'Jeste li SIGURNI? Ova akcija se ne može vratiti. Bit će izbrisani svi bodovi svih igrača s turnira kolo ' +
+      item.round +
+      '.';
+    deleteModalYes.textContent = 'DA, OBRIŠI';
+  }
+
+  function closeDeleteModal() {
+    deleteModal.style.display = 'none';
+    currentDeletingTournament = null;
+    deleteConfirmationStep = 0;
+  }
+
+  async function performTournamentDelete() {
+    if (!currentDeletingTournament) return;
+
+    var item = currentDeletingTournament;
+    var tournamentId = item.id;
+
+    try {
+      // Delete all scores for this tournament
+      var scoresSnapshot = await db.collection('adminRoundScores').where('tournamentId', '==', tournamentId).get();
+
+      var batch = db.batch();
+
+      scoresSnapshot.docs.forEach(function (doc) {
+        batch.delete(doc.ref);
+      });
+
+      // Also delete all table assignments for this tournament
+      var assignmentsSnapshot = await db
+        .collection('adminTableAssignments')
+        .where('tournamentId', '==', tournamentId)
+        .get();
+
+      assignmentsSnapshot.docs.forEach(function (doc) {
+        batch.delete(doc.ref);
+      });
+
+      // Delete the tournament itself
+      batch.delete(tournamentsCollection.doc(tournamentId));
+
+      await batch.commit();
+
+      if (editingTournamentId === tournamentId) {
+        form.reset();
+        resetEditMode();
+      }
+
+      setStatus('Turnir i svi njegovi podaci su uspješno obrisani.', false);
+      closeDeleteModal();
+    } catch (error) {
+      console.error(error);
+      setStatus('Brisanje turnira nije uspjelo.', true);
+      closeDeleteModal();
+    }
   }
 
   function createMessage(text) {
@@ -227,8 +320,8 @@
     var thead = document.createElement('thead');
     var headRow = document.createElement('tr');
     var headLabels = isMobileCompact
-      ? ['Kolo', 'Termin', 'Venue', '', '', '']
-      : ['Kolo', 'Datum', 'Vrijeme', 'Venue', 'Status', '', ''];
+      ? ['Kolo', 'Termin', 'Venue', 'Status', 'Zat.h', '', '', '']
+      : ['Kolo', 'Datum', 'Vrijeme', 'Venue', 'Status', 'Zat.h', '', '', ''];
 
     headLabels.forEach(function (label, index) {
       var th = document.createElement('th');
@@ -244,14 +337,17 @@
         th.className = 'tournament-col-status';
         th.setAttribute('aria-label', 'Status');
       }
-      if ((isMobileCompact && (index === 4 || index === 5)) || (!isMobileCompact && (index === 5 || index === 6))) {
+      if ((isMobileCompact && (index === 5 || index === 6 || index === 7)) || (!isMobileCompact && (index === 6 || index === 7 || index === 8))) {
         th.className = 'tournament-action-head';
       }
-      if ((isMobileCompact && index === 4) || (!isMobileCompact && index === 5)) {
+      if ((isMobileCompact && index === 5) || (!isMobileCompact && index === 6)) {
         th.setAttribute('aria-label', 'Uredi');
       }
-      if ((isMobileCompact && index === 5) || (!isMobileCompact && index === 6)) {
+      if ((isMobileCompact && index === 6) || (!isMobileCompact && index === 7)) {
         th.setAttribute('aria-label', 'Aktivacija');
+      }
+      if ((isMobileCompact && index === 7) || (!isMobileCompact && index === 8)) {
+        th.setAttribute('aria-label', 'Brisanje');
       }
 
       headRow.appendChild(th);
@@ -291,6 +387,11 @@
       tdStatus.textContent = isMobileCompact
         ? (item.active === false ? 'Off' : 'On')
         : (item.active === false ? 'Neaktivan' : 'Aktivan');
+
+      var tdCloseHours = document.createElement('td');
+      var closeHoursVal = item.registrationCloseHours;
+      tdCloseHours.textContent = (closeHoursVal != null && closeHoursVal > 0) ? closeHoursVal + 'h' : '\u2014';
+      tdCloseHours.className = 'tournament-close-hours-cell';
 
       var tdEdit = document.createElement('td');
       tdEdit.className = 'tournament-action-cell';
@@ -336,6 +437,19 @@
       });
       tdToggle.appendChild(toggleButton);
 
+      var tdDelete = document.createElement('td');
+      tdDelete.className = 'tournament-action-cell';
+      var deleteButton = document.createElement('button');
+      deleteButton.type = 'button';
+      deleteButton.className = 'partner-action-btn partner-action-btn-danger tournament-icon-btn';
+      deleteButton.textContent = '✕';
+      deleteButton.setAttribute('aria-label', 'Obriši turnir');
+      deleteButton.title = 'Obriši';
+      deleteButton.addEventListener('click', function () {
+        deleteTournament(item);
+      });
+      tdDelete.appendChild(deleteButton);
+
       row.appendChild(tdRound);
       row.appendChild(tdDate);
       if (tdTime) {
@@ -343,8 +457,10 @@
       }
       row.appendChild(tdVenue);
       row.appendChild(tdStatus);
+      row.appendChild(tdCloseHours);
       row.appendChild(tdEdit);
       row.appendChild(tdToggle);
+      row.appendChild(tdDelete);
       tbody.appendChild(row);
     });
 
@@ -418,6 +534,7 @@
     var venueOption = venueSelect.options[venueSelect.selectedIndex];
     var venueName = venueOption ? venueOption.dataset.name || venueOption.textContent : '';
     var round = parseInt(roundInput.value, 10);
+    var registrationCloseHours = parseInt(registrationCloseHoursInput.value, 10);
     var isEditing = !!editingTournamentId;
 
     if (!tournamentsCollection) {
@@ -445,6 +562,11 @@
       return;
     }
 
+    if (isNaN(registrationCloseHours) || registrationCloseHours < 0) {
+      setStatus('Unesi ispravan broj sati za zatvaranje prijava.', true);
+      return;
+    }
+
     setSubmitting(true);
     setStatus('Spremanje turnira u tijeku...', false);
 
@@ -454,7 +576,8 @@
         venueId: venueId,
         venueName: venueName,
         time: timeInput.value,
-        round: round
+        round: round,
+        registrationCloseHours: registrationCloseHours
       };
 
       if (isEditing) {
@@ -493,6 +616,29 @@
   if (filterVenueSelect) {
     filterVenueSelect.addEventListener('change', renderTournaments);
   }
+
+  // Delete modal event listeners
+  if (deleteModalCancel) {
+    deleteModalCancel.addEventListener('click', closeDeleteModal);
+  }
+
+  if (deleteModalYes) {
+    deleteModalYes.addEventListener('click', function () {
+      if (deleteConfirmationStep === 1) {
+        if (currentDeletingTournament) {
+          showDeleteConfirmStep2(currentDeletingTournament);
+        }
+      } else if (deleteConfirmationStep === 2) {
+        performTournamentDelete();
+      }
+    });
+  }
+
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') {
+      closeDeleteModal();
+    }
+  });
 
   resetEditMode();
   waitForFirebaseAndSubscribe();

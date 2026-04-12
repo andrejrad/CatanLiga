@@ -25,18 +25,15 @@ service cloud.firestore {
         && request.resource.data.logoPath is string
         && request.resource.data.logoPath.size() > 0
         && request.resource.data.contact is string
-        && request.resource.data.contact.size() > 0
         && request.resource.data.contact.size() <= 220
         && request.resource.data.web is string
-        && request.resource.data.web.size() > 0
         && request.resource.data.web.size() <= 240
         && (!('active' in request.resource.data) || request.resource.data.active is bool)
         && request.resource.data.description is string
-        && request.resource.data.description.size() > 0
         && request.resource.data.description.size() <= 130
         && request.resource.data.types is list
         && request.resource.data.types.size() > 0
-        && request.resource.data.types.size() <= 5;
+        && request.resource.data.types.size() <= 6;
     }
 
     match /adminTournaments/{tournamentId} {
@@ -50,6 +47,7 @@ service cloud.firestore {
           'venueName',
           'time',
           'round',
+          'registrationCloseHours',
           'active',
           'createdAt'
         ])
@@ -64,6 +62,10 @@ service cloud.firestore {
         && request.resource.data.time.size() == 5
         && request.resource.data.round is int
         && request.resource.data.round > 0
+        && (!('registrationCloseHours' in request.resource.data)
+          || (request.resource.data.registrationCloseHours is int
+            && request.resource.data.registrationCloseHours >= 0
+            && request.resource.data.registrationCloseHours <= 168))
         && (!('active' in request.resource.data) || request.resource.data.active is bool);
     }
 
@@ -123,6 +125,128 @@ service cloud.firestore {
         && request.resource.data.sponsorWeb.size() <= 240;
     }
 
+    match /adminScoreRules/{ruleId} {
+      allow read: if true;
+
+      allow delete: if true;
+
+      allow create, update: if request.resource.data.keys().hasOnly([
+          'place',
+          'points',
+          'createdAt'
+        ])
+        && request.resource.data.place is int
+        && request.resource.data.place > 0
+        && request.resource.data.place <= 500
+        && request.resource.data.points is int
+        && request.resource.data.points >= 0
+        && request.resource.data.points <= 500;
+    }
+
+    match /adminScoreConfig/{configId} {
+      allow read: if true;
+
+      allow create, update: if request.resource.data.keys().hasOnly([
+          'gamePointsCoefficient',
+          'updatedAt'
+        ])
+        && request.resource.data.gamePointsCoefficient is number
+        && request.resource.data.gamePointsCoefficient >= 0
+        && request.resource.data.gamePointsCoefficient <= 10;
+    }
+
+    match /adminTableAssignments/{assignmentId} {
+      allow read: if true;
+
+      allow delete: if true;
+
+      allow create, update: if request.resource.data.keys().hasOnly([
+          'tournamentId',
+          'tournamentLabel',
+          'round',
+          'registrationId',
+          'playerName',
+          'email',
+          'note',
+          'tableNumber',
+          'updatedAt'
+        ])
+        && request.resource.data.tournamentId is string
+        && request.resource.data.tournamentId.size() > 0
+        && request.resource.data.tournamentId.size() <= 120
+        && request.resource.data.tournamentLabel is string
+        && request.resource.data.tournamentLabel.size() > 0
+        && request.resource.data.tournamentLabel.size() <= 240
+        && request.resource.data.round is int
+        && request.resource.data.round >= 1
+        && request.resource.data.round <= 3
+        && request.resource.data.registrationId is string
+        && request.resource.data.registrationId.size() > 0
+        && request.resource.data.registrationId.size() <= 120
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() > 0
+        && request.resource.data.playerName.size() <= 180
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 5
+        && request.resource.data.email.size() <= 160
+        && request.resource.data.email.matches('^.+@.+\\..+$')
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 600
+        && request.resource.data.tableNumber is int
+        && request.resource.data.tableNumber > 0
+        && request.resource.data.tableNumber <= 500;
+    }
+
+    match /adminRoundScores/{scoreId} {
+      allow read: if true;
+
+      allow delete: if true;
+
+      allow create, update: if request.resource.data.keys().hasOnly([
+          'tournamentId',
+          'tournamentLabel',
+          'round',
+          'registrationId',
+          'playerName',
+          'tableNumber',
+          'place',
+          'vp',
+          'roundPoints',
+          'locked',
+          'lockedAt',
+          'updatedAt'
+        ])
+        && request.resource.data.tournamentId is string
+        && request.resource.data.tournamentId.size() > 0
+        && request.resource.data.tournamentId.size() <= 120
+        && request.resource.data.tournamentLabel is string
+        && request.resource.data.tournamentLabel.size() > 0
+        && request.resource.data.tournamentLabel.size() <= 240
+        && request.resource.data.round is int
+        && request.resource.data.round >= 1
+        && request.resource.data.round <= 3
+        && request.resource.data.registrationId is string
+        && request.resource.data.registrationId.size() > 0
+        && request.resource.data.registrationId.size() <= 120
+        && request.resource.data.playerName is string
+        && request.resource.data.playerName.size() > 0
+        && request.resource.data.playerName.size() <= 180
+        && request.resource.data.tableNumber is int
+        && request.resource.data.tableNumber > 0
+        && request.resource.data.tableNumber <= 500
+        && request.resource.data.place is int
+        && request.resource.data.place > 0
+        && request.resource.data.place <= 500
+        && request.resource.data.vp is int
+        && request.resource.data.vp >= 0
+        && request.resource.data.vp <= 30
+        && (!('roundPoints' in request.resource.data)
+          || (request.resource.data.roundPoints is number
+            && request.resource.data.roundPoints >= 0
+            && request.resource.data.roundPoints <= 1000))
+        && (!('locked' in request.resource.data) || request.resource.data.locked is bool);
+    }
+
     match /registrations/{registrationId} {
       allow read: if true;
 
@@ -157,7 +281,38 @@ service cloud.firestore {
         && request.resource.data.consentAccepted is bool
         && request.resource.data.consentAccepted == true;
 
-      allow update, delete: if false;
+      allow update: if request.resource.data.keys().hasOnly([
+          'firstName',
+          'lastName',
+          'email',
+          'tournamentId',
+          'tournamentLabel',
+          'note',
+          'consentAccepted',
+          'createdAt'
+        ])
+        && request.resource.data.firstName is string
+        && request.resource.data.firstName.size() > 0
+        && request.resource.data.firstName.size() <= 80
+        && request.resource.data.lastName is string
+        && request.resource.data.lastName.size() > 0
+        && request.resource.data.lastName.size() <= 80
+        && request.resource.data.email is string
+        && request.resource.data.email.size() > 5
+        && request.resource.data.email.size() <= 160
+        && request.resource.data.email.matches('^.+@.+\\..+$')
+        && request.resource.data.tournamentId is string
+        && request.resource.data.tournamentId.size() > 0
+        && request.resource.data.tournamentId.size() <= 120
+        && request.resource.data.tournamentLabel is string
+        && request.resource.data.tournamentLabel.size() > 0
+        && request.resource.data.tournamentLabel.size() <= 240
+        && request.resource.data.note is string
+        && request.resource.data.note.size() <= 600
+        && request.resource.data.consentAccepted is bool
+        && request.resource.data.consentAccepted == true;
+
+      allow delete: if true;
     }
   }
 }
