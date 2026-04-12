@@ -22,6 +22,14 @@
       exportBtn: document.getElementById('round2ExportBtn'),
       tableFilterSelect: document.getElementById('round2TableFilter'),
       randomBtn: document.getElementById('round2RandomBtn')
+    },
+    3: {
+      listEl: document.getElementById('round3List'),
+      summaryEl: document.getElementById('round3Summary'),
+      saveBtn: document.getElementById('round3SaveBtn'),
+      exportBtn: document.getElementById('round3ExportBtn'),
+      tableFilterSelect: document.getElementById('round3TableFilter'),
+      randomBtn: document.getElementById('round3ArrangeBtn')
     }
   };
 
@@ -29,20 +37,23 @@
   var tournamentsCollection = null;
   var registrationsCollection = null;
   var tableAssignmentsCollection = null;
+  var roundScoresCollection = null;
 
   var allTournaments = [];
   var selectedTournament = null;
   var tournamentRegistrations = [];
   var assignmentsByRound = {
     1: {},
-    2: {}
+    2: {},
+    3: {}
   };
   var roundFilterSelections = {
     1: '',
-    2: ''
+    2: '',
+    3: ''
   };
 
-  if (!tournamentSelect || !statusEl || !roundViews[1].listEl || !roundViews[2].listEl) {
+  if (!tournamentSelect || !statusEl || !roundViews[1].listEl || !roundViews[2].listEl || !roundViews[3].listEl) {
     return;
   }
 
@@ -408,10 +419,13 @@
   function renderAllRounds() {
     renderRoundFilter(1);
     renderRoundFilter(2);
+    renderRoundFilter(3);
     renderRoundTable(1);
     renderRoundTable(2);
+    renderRoundTable(3);
     renderSummary(1);
     renderSummary(2);
+    renderSummary(3);
   }
 
   function getAssignmentDocId(round, registrationId) {
@@ -496,6 +510,107 @@
     setStatus('Nasumični raspored za rundu 2 je generiran. Po potrebi ga ručno prilagodi i spremi.', false);
   }
 
+  function compareByTieBreak(a, b) {
+    if (b.totalPoints !== a.totalPoints) {
+      return b.totalPoints - a.totalPoints;
+    }
+    if (b.wins !== a.wins) {
+      return b.wins - a.wins;
+    }
+    if (b.totalVp !== a.totalVp) {
+      return b.totalVp - a.totalVp;
+    }
+
+    var aLastPlace = Number.isInteger(a.lastPlace) ? a.lastPlace : Number.MAX_SAFE_INTEGER;
+    var bLastPlace = Number.isInteger(b.lastPlace) ? b.lastPlace : Number.MAX_SAFE_INTEGER;
+    if (aLastPlace !== bLastPlace) {
+      return aLastPlace - bLastPlace;
+    }
+
+    return getPlayerName(a.registration).localeCompare(getPlayerName(b.registration), 'hr', { sensitivity: 'base' });
+  }
+
+  function buildRound3OrderFromScores(roundScores) {
+    var statsByRegistration = {};
+
+    tournamentRegistrations.forEach(function (registration) {
+      statsByRegistration[registration.id] = {
+        registration: registration,
+        totalPoints: 0,
+        wins: 0,
+        totalVp: 0,
+        lastRound: 0,
+        lastPlace: null
+      };
+    });
+
+    roundScores.forEach(function (score) {
+      if (score.round !== 1 && score.round !== 2) {
+        return;
+      }
+
+      var registrationId = score.registrationId;
+      if (!registrationId || !statsByRegistration[registrationId]) {
+        return;
+      }
+
+      var stats = statsByRegistration[registrationId];
+      var points = Number(score.roundPoints || 0);
+      var vp = Number(score.vp || 0);
+      var place = Number(score.place || 0);
+
+      stats.totalPoints += points;
+      stats.totalVp += vp;
+      if (place === 1) {
+        stats.wins += 1;
+      }
+
+      if (Number.isInteger(score.round) && score.round >= stats.lastRound) {
+        stats.lastRound = score.round;
+        stats.lastPlace = Number.isInteger(place) ? place : stats.lastPlace;
+      }
+    });
+
+    return Object.values(statsByRegistration).sort(compareByTieBreak);
+  }
+
+  async function generateRound3ByStandings() {
+    if (!selectedTournament) {
+      setStatus('Odaberi turnir prije rasporeda runde 3.', true);
+      return;
+    }
+
+    if (!tournamentRegistrations.length) {
+      setStatus('Nema prijavljenih igrača za rasporediti.', true);
+      return;
+    }
+
+    try {
+      var roundScoresSnapshot = await roundScoresCollection
+        .where('tournamentId', '==', selectedTournament.id)
+        .get();
+
+      var roundScores = roundScoresSnapshot.docs.map(function (doc) {
+        return doc.data() || {};
+      });
+
+      var ordered = buildRound3OrderFromScores(roundScores);
+      assignmentsByRound[3] = {};
+
+      ordered.forEach(function (item, index) {
+        var tableNumber = Math.floor(index / PLAYERS_PER_TABLE) + 1;
+        setAssignmentValue(3, item.registration, String(tableNumber));
+      });
+
+      renderRoundTable(3);
+      renderSummary(3);
+      setStatus('Runda 3 je raspoređena prema trenutnom poretku nakon prve dvije runde.', false);
+    } catch (error) {
+      console.error(error);
+      setStatus('Automatski raspored za rundu 3 nije uspio.', true);
+    }
+  }
+
   function exportRoundCsv(round) {
     if (!selectedTournament) {
       setStatus('Odaberi turnir prije exporta.', true);
@@ -556,6 +671,7 @@
   async function loadAssignmentsForTournament(tournamentId) {
     assignmentsByRound[1] = {};
     assignmentsByRound[2] = {};
+    assignmentsByRound[3] = {};
 
     if (!tournamentId) {
       tournamentRegistrations = [];
@@ -673,6 +789,7 @@
     tournamentsCollection = db.collection('adminTournaments');
     registrationsCollection = db.collection('registrations');
     tableAssignmentsCollection = db.collection('adminTableAssignments');
+    roundScoresCollection = db.collection('adminRoundScores');
     return true;
   }
 
@@ -734,6 +851,11 @@
     renderRoundTable(2);
   });
 
+  roundViews[3].tableFilterSelect.addEventListener('change', function () {
+    roundFilterSelections[3] = roundViews[3].tableFilterSelect.value;
+    renderRoundTable(3);
+  });
+
   roundViews[1].saveBtn.addEventListener('click', function () {
     saveRound(1);
   });
@@ -748,6 +870,15 @@
   });
   roundViews[2].exportBtn.addEventListener('click', function () {
     exportRoundCsv(2);
+  });
+  roundViews[3].randomBtn.addEventListener('click', function () {
+    generateRound3ByStandings();
+  });
+  roundViews[3].saveBtn.addEventListener('click', function () {
+    saveRound(3);
+  });
+  roundViews[3].exportBtn.addEventListener('click', function () {
+    exportRoundCsv(3);
   });
 
   waitForFirebaseAndInit();

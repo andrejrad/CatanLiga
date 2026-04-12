@@ -10,7 +10,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=81" />
+    <link rel="stylesheet" href="styles.css?v=82" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -85,7 +85,26 @@
         </article>
 
         <article class="bodovanje-panel" id="panel-runda-3" role="tabpanel" aria-labelledby="tab-runda-3" hidden>
-          <p class="admin-note">Runda 3 će biti dodana kasnije.</p>
+          <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 3">
+            <button id="round3ArrangeBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Rasporedi igrače</button>
+            <button id="round3SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 3</button>
+            <button id="round3ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+          </div>
+          <div class="partner-filters" aria-label="Filter runde 3">
+            <label class="form-field">
+              <span class="form-label">Filtriraj po broju stola</span>
+              <select id="round3TableFilter">
+                <option value="">Svi stolovi</option>
+              </select>
+            </label>
+          </div>
+          <div id="round3List" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Odaberi turnir za prikaz prijavljenih igrača.</p>
+          </div>
+          <h2 class="about-heading"><strong>Sažetak po stolovima</strong></h2>
+          <div id="round3Summary" class="tournament-list" aria-live="polite">
+            <p class="admin-note">Sažetak će biti prikazan nakon odabira turnira.</p>
+          </div>
         </article>
       </section>
     </div>
@@ -93,6 +112,6 @@
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
-    <script defer src="admin-raspored-stolova.js?v=3"></script>
+    <script defer src="admin-raspored-stolova.js?v=4"></script>
   </body>
 </html>

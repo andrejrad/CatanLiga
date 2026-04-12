@@ -8,6 +8,7 @@
   var roundViews = {
     1: {
       listEl: document.getElementById('scoreRound1List'),
+      tableStatusEl: document.getElementById('scoreRound1TableStatus'),
       saveBtn: document.getElementById('scoreRound1SaveBtn'),
       exportBtn: document.getElementById('scoreRound1ExportBtn'),
       tableFilterSelect: document.getElementById('scoreRound1TableFilter'),
@@ -16,6 +17,7 @@
     },
     2: {
       listEl: document.getElementById('scoreRound2List'),
+      tableStatusEl: document.getElementById('scoreRound2TableStatus'),
       saveBtn: document.getElementById('scoreRound2SaveBtn'),
       exportBtn: document.getElementById('scoreRound2ExportBtn'),
       tableFilterSelect: document.getElementById('scoreRound2TableFilter'),
@@ -24,6 +26,7 @@
     },
     3: {
       listEl: document.getElementById('scoreRound3List'),
+      tableStatusEl: document.getElementById('scoreRound3TableStatus'),
       saveBtn: document.getElementById('scoreRound3SaveBtn'),
       exportBtn: document.getElementById('scoreRound3ExportBtn'),
       tableFilterSelect: document.getElementById('scoreRound3TableFilter'),
@@ -48,6 +51,7 @@
   var tableFilterByRound = { 1: '', 2: '', 3: '' };
   var gamePointsCoefficient = 0.5;
   var placeBonusMap = {};
+  var tabButtonsByRound = {};
 
   if (!tournamentSelect || !statusEl || !roundViews[1].listEl || !roundViews[2].listEl || !roundViews[3].listEl) {
     return;
@@ -145,6 +149,8 @@
     [1, 2, 3].forEach(function (round) {
       roundViews[round].listEl.innerHTML = '';
       roundViews[round].listEl.appendChild(createMessage(message));
+      roundViews[round].tableStatusEl.innerHTML = '';
+      roundViews[round].tableStatusEl.appendChild(createMessage(message));
       setRoundButtonsEnabled(round, false);
       roundViews[round].tableFilterSelect.innerHTML = '';
       var option = document.createElement('option');
@@ -154,6 +160,130 @@
       tableFilterByRound[round] = '';
       setRoundLockStatus(round, '', false);
     });
+    updateTabAvailability();
+  }
+
+  function getRoundTableStatuses(round) {
+    var statusMap = {};
+
+    buildRoundRows(round).forEach(function (row) {
+      if (!statusMap[row.tableNumber]) {
+        statusMap[row.tableNumber] = {
+          tableNumber: row.tableNumber,
+          allLocked: true,
+          playerCount: 0
+        };
+      }
+
+      statusMap[row.tableNumber].playerCount += 1;
+      if (!row.locked) {
+        statusMap[row.tableNumber].allLocked = false;
+      }
+    });
+
+    return Object.keys(statusMap)
+      .map(function (key) { return statusMap[key]; })
+      .sort(function (a, b) { return a.tableNumber - b.tableNumber; });
+  }
+
+  function isRoundFullyLocked(round) {
+    var statuses = getRoundTableStatuses(round);
+    if (!statuses.length) {
+      return false;
+    }
+    return statuses.every(function (item) { return item.allLocked; });
+  }
+
+  function canOpenRound(round) {
+    if (round <= 1) {
+      return true;
+    }
+
+    if (!selectedTournament) {
+      return false;
+    }
+
+    for (var prevRound = 1; prevRound < round; prevRound += 1) {
+      if (!isRoundFullyLocked(prevRound)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  function getRoundFromPanelId(targetId) {
+    if (targetId === 'panel-score-r1') return 1;
+    if (targetId === 'panel-score-r2') return 2;
+    if (targetId === 'panel-score-r3') return 3;
+    return 1;
+  }
+
+  function updateTabAvailability() {
+    [1, 2, 3].forEach(function (round) {
+      var button = tabButtonsByRound[round];
+      if (!button) {
+        return;
+      }
+
+      var allowed = canOpenRound(round);
+      button.disabled = !allowed;
+      button.setAttribute('aria-disabled', allowed ? 'false' : 'true');
+      button.title = allowed
+        ? ''
+        : 'Prije ove runde moraš zaključati sve stolove prethodnih rundi.';
+    });
+  }
+
+  function renderRoundTableStatus(round) {
+    var statusListEl = roundViews[round].tableStatusEl;
+    statusListEl.innerHTML = '';
+
+    if (!selectedTournament) {
+      statusListEl.appendChild(createMessage('Status stolova će biti prikazan nakon odabira turnira.'));
+      return;
+    }
+
+    var statuses = getRoundTableStatuses(round);
+    if (!statuses.length) {
+      statusListEl.appendChild(createMessage('Za ovu rundu nema raspoređenih stolova.'));
+      return;
+    }
+
+    var wrap = document.createElement('div');
+    wrap.className = 'tournament-table-wrap';
+
+    var table = document.createElement('table');
+    table.className = 'tournament-table';
+
+    var thead = document.createElement('thead');
+    var headRow = document.createElement('tr');
+    ['Stol broj', 'Status'].forEach(function (label) {
+      var th = document.createElement('th');
+      th.textContent = label;
+      headRow.appendChild(th);
+    });
+    thead.appendChild(headRow);
+
+    var tbody = document.createElement('tbody');
+    statuses.forEach(function (item) {
+      var row = document.createElement('tr');
+
+      var tableTd = document.createElement('td');
+      tableTd.textContent = String(item.tableNumber);
+
+      var statusTd = document.createElement('td');
+      statusTd.textContent = item.allLocked ? 'Zaključan' : 'Igra u toku';
+
+      row.appendChild(tableTd);
+      row.appendChild(statusTd);
+      tbody.appendChild(row);
+    });
+
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    wrap.appendChild(table);
+    statusListEl.appendChild(wrap);
   }
 
   function buildRoundRows(round) {
@@ -275,6 +405,8 @@
     if (!selectedTournament) {
       listEl.appendChild(createMessage('Odaberi turnir za prikaz tablice.'));
       setRoundButtonsEnabled(round, false);
+      renderRoundTableStatus(round);
+      updateTabAvailability();
       return;
     }
 
@@ -284,6 +416,8 @@
       setRoundButtonsEnabled(round, false);
       renderRoundFilter(round, []);
       refreshLockUi(round);
+      renderRoundTableStatus(round);
+      updateTabAvailability();
       return;
     }
 
@@ -294,6 +428,8 @@
     if (!rows.length) {
       listEl.appendChild(createMessage('Nema igrača za odabrani broj stola.'));
       refreshLockUi(round);
+      renderRoundTableStatus(round);
+      updateTabAvailability();
       return;
     }
 
@@ -396,12 +532,15 @@
     wrap.appendChild(table);
     listEl.appendChild(wrap);
     refreshLockUi(round);
+    renderRoundTableStatus(round);
+    updateTabAvailability();
   }
 
   function renderAllRounds() {
     renderRoundTable(1);
     renderRoundTable(2);
     renderRoundTable(3);
+    updateTabAvailability();
   }
 
   function getRoundScoreDocId(round, registrationId) {
@@ -558,7 +697,14 @@
     try {
       await batch.commit();
       renderRoundTable(round);
-      setStatus('Stol ' + selectedTable + ' u rundi ' + round + ' je zaključen. Bodovi su izračunati po formuli.', false);
+      updateTabAvailability();
+
+      if (isRoundFullyLocked(round) && round < 3) {
+        var nextRound = round + 1;
+        setStatus('Svi stolovi u rundi ' + round + ' su zaključani. Sada možeš prijeći na rundu ' + nextRound + '.', false);
+      } else {
+        setStatus('Stol ' + selectedTable + ' u rundi ' + round + ' je zaključen. Bodovi su izračunati po formuli.', false);
+      }
     } catch (error) {
       console.error(error);
       setStatus('Zaključavanje stola nije uspjelo.', true);
@@ -679,6 +825,12 @@
 
     function activateTab(button) {
       var targetId = button.getAttribute('data-tab-target');
+      var targetRound = getRoundFromPanelId(targetId);
+
+      if (!canOpenRound(targetRound)) {
+        setStatus('Ne možeš prijeći u rundu ' + targetRound + ' dok svi stolovi u prethodnim rundama nisu zaključani.', true);
+        return;
+      }
 
       tabButtons.forEach(function (tabButton) {
         var isActive = tabButton === button;
@@ -692,9 +844,14 @@
         panel.classList.toggle('is-active', isActive);
         panel.hidden = !isActive;
       });
+
+      updateTabAvailability();
     }
 
     tabButtons.forEach(function (button, index) {
+      var roundFromTarget = getRoundFromPanelId(button.getAttribute('data-tab-target'));
+      tabButtonsByRound[roundFromTarget] = button;
+
       button.addEventListener('click', function () {
         activateTab(button);
       });
@@ -724,6 +881,8 @@
         activateTab(button);
       }
     });
+
+    updateTabAvailability();
   }
 
   function initFirebaseConnections() {
