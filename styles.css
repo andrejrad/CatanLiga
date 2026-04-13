@@ -592,6 +592,7 @@ body {
 }
 
 .admin-form input[type="text"],
+.admin-form input[type="email"],
 .admin-form input[type="date"],
 .admin-form input[type="time"],
 .admin-form input[type="number"],
@@ -639,11 +640,6 @@ body {
 
 .registration-consent .contact-link {
   font-weight: 600;
-}
-
-.admin-form #registrationEmail {
-  padding-top: 0.93rem;
-  padding-bottom: 0.93rem;
 }
 
 .form-status {
