@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Prijava - Catan Liga Zagreb</title>
-    <link rel="icon" type="image/png" href="Assets/favicon.png" />
+    <link rel="icon" type="image/png" href="Assets/favicon.png?v=2" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -63,9 +63,9 @@
           <label>
             <input id="registrationConsent" name="consent" type="checkbox" required />
             Prihvaćam
-            <a class="contact-link" href="uvjeti-koristenja.html" target="_blank" rel="noopener">Pravila Korištenja</a>
+            <a class="contact-link" href="uvjeti-koristenja.html">Pravila i Uvjete Korištenja</a>
             i
-            <a class="contact-link" href="politika-privatnosti.html" target="_blank" rel="noopener">Politiku Privatnosti</a>.
+            <a class="contact-link" href="politika-privatnosti.html">Politiku Privatnosti</a>.
           </label>
         </fieldset>
 
@@ -75,6 +75,14 @@
           <button id="registrationSubmitBtn" class="page-cta-btn" type="submit">Pošalji prijavu</button>
         </div>
       </form>
+    </div>
+
+    <div id="successPopup" class="popup-overlay" hidden>
+      <div class="popup-box">
+        <h2 class="popup-title">Catan Liga Zagreb</h2>
+        <p class="popup-body">Prijava je uspješno zaprimljena. Veselimo se tvom dolasku na turnir!</p>
+        <button class="popup-close" id="successPopupClose" aria-label="Zatvori">×</button>
+      </div>
     </div>
   </body>
 </html>

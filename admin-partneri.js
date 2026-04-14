@@ -45,7 +45,8 @@
   function getSelectedTypes() {
     var checked = form.querySelectorAll('input[name="partnerType"]:checked');
     return Array.prototype.map.call(checked, function (item) {
-      return item.value;
+      var value = item.value;
+      return value.charAt(0).toUpperCase() + value.slice(1);
     });
   }
 
@@ -81,12 +82,12 @@
   function setTypeSelections(typeValues) {
     var selectedMap = {};
     (typeValues || []).forEach(function (value) {
-      selectedMap[value] = true;
+      selectedMap[value.toLowerCase()] = true;
     });
 
     var typeInputs = form.querySelectorAll('input[name="partnerType"]');
     Array.prototype.forEach.call(typeInputs, function (input) {
-      input.checked = !!selectedMap[input.value];
+      input.checked = !!selectedMap[input.value.toLowerCase()];
     });
   }
 
@@ -302,7 +303,9 @@
 
     var filtered = allPartners.filter(function (partner) {
       var partnerTypes = partner.types || [];
-      var typeOk = !selectedType || partnerTypes.indexOf(selectedType) !== -1;
+      var typeOk = !selectedType || partnerTypes.some(function(type) {
+        return type.toLowerCase() === selectedType.toLowerCase();
+      });
       var nameOk = !searchText || (partner.name || '').toLowerCase().indexOf(searchText) !== -1;
       return typeOk && nameOk;
     });

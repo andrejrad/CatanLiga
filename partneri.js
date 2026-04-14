@@ -51,13 +51,6 @@
     name.className = 'public-partner-name';
     name.textContent = data.name || '';
 
-    var webLink = document.createElement('a');
-    webLink.className = 'public-partner-web';
-    webLink.href = normalizeWebUrl(data.web) || '#';
-    webLink.target = '_blank';
-    webLink.rel = 'noopener';
-    webLink.textContent = data.web || '';
-
     var types = document.createElement('p');
     types.className = 'public-partner-types';
     types.textContent = (data.types || []).join(', ');
@@ -66,15 +59,25 @@
     description.className = 'public-partner-description';
     description.textContent = data.description || '';
 
-    titleRow.appendChild(name);
+    var webLink = null;
     if (data.web) {
-      titleRow.appendChild(webLink);
+      webLink = document.createElement('a');
+      webLink.className = 'public-partner-web';
+      webLink.href = normalizeWebUrl(data.web) || '#';
+      webLink.target = '_blank';
+      webLink.rel = 'noopener';
+      webLink.textContent = data.web || '';
     }
+
+    titleRow.appendChild(name);
 
     body.appendChild(titleRow);
     body.appendChild(logoWrap);
     body.appendChild(types);
     body.appendChild(description);
+    if (webLink) {
+      body.appendChild(webLink);
+    }
 
     card.appendChild(body);
     return card;

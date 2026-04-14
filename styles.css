@@ -1118,6 +1118,8 @@ body {
 }
 
 .public-partner-web {
+  display: block;
+  margin-top: 0.6rem;
   font-size: 0.82rem;
   color: #ffe680;
   text-decoration: underline;

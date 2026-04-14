@@ -246,7 +246,23 @@
       });
 
       form.reset();
-      setStatus('Prijava je uspješno zaprimljena.', false);
+      setStatus('', false);
+      
+      var successPopup = document.getElementById('successPopup');
+      var successPopupClose = document.getElementById('successPopupClose');
+      
+      function closePopupAndRedirect() {
+        successPopup.hidden = true;
+        window.location.href = 'index.html';
+      }
+      
+      successPopup.hidden = false;
+      successPopupClose.onclick = closePopupAndRedirect;
+      successPopup.onclick = function(e) {
+        if (e.target === successPopup) {
+          closePopupAndRedirect();
+        }
+      };
     } catch (error) {
       console.error(error);
       setStatus('Spremanje prijave nije uspjelo. Pokušaj ponovno.', true);
