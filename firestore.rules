@@ -105,11 +105,12 @@ service cloud.firestore {
           'imagePath',
           'sponsor',
           'sponsorWeb',
+          'sortOrder',
           'createdAt'
         ])
-        && request.resource.data.place is int
-        && request.resource.data.place > 0
-        && request.resource.data.place <= 500
+        && request.resource.data.place is string
+        && request.resource.data.place.size() > 0
+        && request.resource.data.place.size() <= 100
         && request.resource.data.description is string
         && request.resource.data.description.size() > 0
         && request.resource.data.description.size() <= 300
@@ -122,7 +123,8 @@ service cloud.firestore {
         && request.resource.data.sponsor.size() <= 120
         && request.resource.data.sponsorWeb is string
         && request.resource.data.sponsorWeb.size() > 0
-        && request.resource.data.sponsorWeb.size() <= 240;
+        && request.resource.data.sponsorWeb.size() <= 240
+        && (!('sortOrder' in request.resource.data) || request.resource.data.sortOrder is number);
     }
 
     match /adminScoreRules/{ruleId} {

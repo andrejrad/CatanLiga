@@ -63,6 +63,31 @@
     return p;
   }
 
+  async function moveAward(item, direction, allItems) {
+    if (!awardsCollection) {
+      return;
+    }
+
+    var currentIndex = allItems.findIndex(function(i) { return i.id === item.id; });
+    var targetIndex = currentIndex + direction;
+
+    if (targetIndex < 0 || targetIndex >= allItems.length) {
+      return;
+    }
+
+    var currentOrder = item.sortOrder || 0;
+    var targetItem = allItems[targetIndex];
+    var targetOrder = targetItem.sortOrder || 0;
+
+    try {
+      await awardsCollection.doc(item.id).update({ sortOrder: targetOrder });
+      await awardsCollection.doc(targetItem.id).update({ sortOrder: currentOrder });
+    } catch (error) {
+      console.error(error);
+      setStatus('Promjena redoslijeda nije uspjela.', true);
+    }
+  }
+
   function resetEditMode() {
     editingAwardId = null;
     editingAwardData = null;
@@ -89,7 +114,7 @@
       cancelEditButton.hidden = false;
     }
 
-    setStatus('Uredivanje nagrade za mjesto #' + String(item.place || '') + '. Slika je opcionalna.', false);
+    setStatus('Uređivanje nagrade "' + String(item.place || '') + '". Slika je opcionalna.', false);
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
@@ -102,12 +127,9 @@
     });
 
     items.sort(function (a, b) {
-      var placeA = Number(a.place || 0);
-      var placeB = Number(b.place || 0);
-      if (placeA !== placeB) {
-        return placeA - placeB;
-      }
-      return (a.sponsor || '').localeCompare((b.sponsor || ''), 'hr', { sensitivity: 'base' });
+      var orderA = Number(a.sortOrder) || 0;
+      var orderB = Number(b.sortOrder) || 0;
+      return orderA - orderB;
     });
 
     listEl.innerHTML = '';
@@ -128,7 +150,7 @@
       var body = document.createElement('div');
 
       var title = document.createElement('h3');
-      title.textContent = 'Mjesto #' + String(item.place || '');
+      title.textContent = String(item.place || '');
 
       var description = document.createElement('p');
       description.className = 'partner-meta';
@@ -152,6 +174,24 @@
 
       var actions = document.createElement('div');
       actions.className = 'partner-actions';
+
+      var moveUpButton = document.createElement('button');
+      moveUpButton.type = 'button';
+      moveUpButton.className = 'partner-action-btn';
+      moveUpButton.textContent = '↑';
+      moveUpButton.title = 'Pomakni gore';
+      moveUpButton.addEventListener('click', async function () {
+        await moveAward(item, -1, items);
+      });
+
+      var moveDownButton = document.createElement('button');
+      moveDownButton.type = 'button';
+      moveDownButton.className = 'partner-action-btn';
+      moveDownButton.textContent = '↓';
+      moveDownButton.title = 'Pomakni dolje';
+      moveDownButton.addEventListener('click', async function () {
+        await moveAward(item, 1, items);
+      });
 
       var editButton = document.createElement('button');
       editButton.type = 'button';
@@ -194,6 +234,8 @@
         }
       });
 
+      actions.appendChild(moveUpButton);
+      actions.appendChild(moveDownButton);
       actions.appendChild(editButton);
       actions.appendChild(deleteButton);
 
@@ -230,7 +272,7 @@
         clearInterval(timer);
 
         awardsCollection
-          .orderBy('place', 'asc')
+          .orderBy('sortOrder', 'asc')
           .onSnapshot(renderAwards, function () {
             listEl.innerHTML = '';
             listEl.appendChild(createMessage('Ne mogu ucitati nagrade iz baze.'));
@@ -249,7 +291,7 @@
   form.addEventListener('submit', async function (event) {
     event.preventDefault();
 
-    var place = parseInt(placeInput.value, 10);
+    var place = placeInput.value.trim();
     var description = descriptionInput.value.trim();
     var imageFile = imageInput.files && imageInput.files[0];
     var sponsor = sponsorInput.value.trim();
@@ -261,8 +303,8 @@
       return;
     }
 
-    if (!place || place < 1) {
-      setStatus('Unesi ispravno mjesto na turniru.', true);
+    if (!place) {
+      setStatus('Naslov nagrade je obavezan.', true);
       return;
     }
 
@@ -342,7 +384,7 @@
         var filePath = 'award-images/'
           + Date.now()
           + '-'
-          + place
+          + sanitizeFileNamePart(place)
           + '-'
           + sanitizeFileNamePart(imageFile.name);
 
@@ -350,8 +392,16 @@
         await imageRef.put(imageFile);
         var imageUrl = await imageRef.getDownloadURL();
 
+        var maxOrder = 0;
+        var snapshot = await awardsCollection.orderBy('sortOrder', 'desc').limit(1).get();
+        if (!snapshot.empty) {
+          var lastItem = snapshot.docs[0].data();
+          maxOrder = Number(lastItem.sortOrder) || 0;
+        }
+
         payload.imageUrl = imageUrl;
         payload.imagePath = filePath;
+        payload.sortOrder = maxOrder + 1;
         payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
 
         await awardsCollection.add(payload);

@@ -40,12 +40,9 @@
     });
 
     items.sort(function (a, b) {
-      var placeA = Number(a.place || 0);
-      var placeB = Number(b.place || 0);
-      if (placeA !== placeB) {
-        return placeA - placeB;
-      }
-      return (a.sponsor || '').localeCompare((b.sponsor || ''), 'hr', { sensitivity: 'base' });
+      var orderA = Number(a.sortOrder) || 0;
+      var orderB = Number(b.sortOrder) || 0;
+      return orderA - orderB;
     });
 
     listEl.innerHTML = '';
@@ -66,7 +63,7 @@
       var body = document.createElement('div');
 
       var title = document.createElement('h3');
-      title.textContent = 'Mjesto #' + String(item.place || '');
+      title.textContent = String(item.place || '');
 
       var description = document.createElement('p');
       description.className = 'partner-meta';

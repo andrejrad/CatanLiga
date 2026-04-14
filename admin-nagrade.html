@@ -24,8 +24,9 @@
 
       <form id="awardForm" class="admin-form" novalidate>
         <label class="form-field">
-          <span class="form-label">Tournament place</span>
-          <input id="awardPlace" name="awardPlace" type="number" min="1" step="1" required />
+          <span class="form-label">Naslov nagrade</span>
+          <input id="awardPlace" name="awardPlace" type="text" maxlength="100" required />
+          <small class="field-note">Npr. "1. mjesto", "Najvrijedniji igrač", "Najtoplija pobjednica"</small>
         </label>
 
         <label class="form-field">
