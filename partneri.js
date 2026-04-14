@@ -36,13 +36,8 @@
 
     var body = document.createElement('div');
 
-    var logoWrap = document.createElement('div');
-    logoWrap.className = 'public-partner-logo-wrap';
-
-    var logo = document.createElement('img');
-    logo.alt = (data.name || 'Partner') + ' logo';
-    logo.src = data.logoUrl || '';
-    logoWrap.appendChild(logo);
+    var contentArea = document.createElement('div');
+    contentArea.className = 'public-partner-content';
 
     var titleRow = document.createElement('div');
     titleRow.className = 'public-partner-title-row';
@@ -71,13 +66,24 @@
 
     titleRow.appendChild(name);
 
-    body.appendChild(titleRow);
-    body.appendChild(logoWrap);
-    body.appendChild(types);
-    body.appendChild(description);
+    contentArea.appendChild(titleRow);
+    contentArea.appendChild(types);
+    contentArea.appendChild(description);
     if (webLink) {
-      body.appendChild(webLink);
+      contentArea.appendChild(webLink);
     }
+
+    var squareCard = document.createElement('div');
+    squareCard.className = 'public-partner-square';
+    
+    var logo = document.createElement('img');
+    logo.className = 'public-partner-square-logo';
+    logo.alt = (data.name || 'Partner') + ' logo';
+    logo.src = data.logoUrl || '';
+    squareCard.appendChild(logo);
+
+    body.appendChild(contentArea);
+    body.appendChild(squareCard);
 
     card.appendChild(body);
     return card;
