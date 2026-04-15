@@ -171,7 +171,9 @@
   function renderVenueOptions() {
     var venues = allPartners
       .filter(function (partner) {
-        return partner.active !== false && Array.isArray(partner.types) && partner.types.indexOf('venue partner') !== -1;
+        return partner.active !== false && Array.isArray(partner.types) && partner.types.some(function(type) {
+          return type.toLowerCase() === 'venue partner';
+        });
       })
       .sort(function (a, b) {
         return (a.name || '').localeCompare((b.name || ''), 'hr', { sensitivity: 'base' });

@@ -686,7 +686,7 @@
 
     try {
       var results = await Promise.all([
-        registrationsCollection.where('tournamentId', '==', tournamentId).get(),
+        registrationsCollection.where('tournamentId', '==', tournamentId).where('attended', '==', true).get(),
         tableAssignmentsCollection.where('tournamentId', '==', tournamentId).get()
       ]);
 
@@ -879,6 +879,90 @@
   });
   roundViews[3].exportBtn.addEventListener('click', function () {
     exportRoundCsv(3);
+  });
+
+  // Tables Display Overlay
+  var showTablesBtn = document.getElementById('showTablesBtn');
+  var tablesDisplayOverlay = document.getElementById('tablesDisplayOverlay');
+  var closeTablesBtn = document.getElementById('closeTablesBtn');
+  var tablesDisplayGrid = document.getElementById('tablesDisplayGrid');
+  var tablesRoundBtns = document.querySelectorAll('.tables-round-btn');
+  var currentDisplayRound = 1;
+
+  function renderTablesDisplay(round) {
+    currentDisplayRound = round;
+    tablesDisplayGrid.innerHTML = '';
+
+    if (!selectedTournament) {
+      tablesDisplayGrid.appendChild(createMessage('Odaberi turnir za prikaz stolova.'));
+      return;
+    }
+
+    var summary = buildSummary(round);
+    
+    if (!summary.length) {
+      tablesDisplayGrid.appendChild(createMessage('Za ovu rundu još nema upisanih stolova.'));
+      return;
+    }
+
+    summary.forEach(function (item) {
+      var card = document.createElement('div');
+      card.className = 'table-display-card';
+
+      var title = document.createElement('h2');
+      title.textContent = 'Stol ' + item.tableNumber;
+      card.appendChild(title);
+
+      var playersList = document.createElement('ul');
+      playersList.className = 'table-display-players';
+      
+      item.players.forEach(function (player) {
+        var li = document.createElement('li');
+        li.textContent = getPlayerName(player);
+        playersList.appendChild(li);
+      });
+
+      card.appendChild(playersList);
+      tablesDisplayGrid.appendChild(card);
+    });
+  }
+
+  function showTablesOverlay() {
+    if (!selectedTournament) {
+      setStatus('Odaberi turnir prije prikaza stolova.', true);
+      return;
+    }
+
+    renderTablesDisplay(currentDisplayRound);
+    tablesDisplayOverlay.hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+
+  function hideTablesOverlay() {
+    tablesDisplayOverlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  showTablesBtn.addEventListener('click', showTablesOverlay);
+  closeTablesBtn.addEventListener('click', hideTablesOverlay);
+
+  tablesRoundBtns.forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var round = Number(btn.getAttribute('data-round'));
+      
+      tablesRoundBtns.forEach(function (b) {
+        b.classList.remove('is-active');
+      });
+      btn.classList.add('is-active');
+      
+      renderTablesDisplay(round);
+    });
+  });
+
+  tablesDisplayOverlay.addEventListener('click', function (event) {
+    if (event.target === tablesDisplayOverlay) {
+      hideTablesOverlay();
+    }
   });
 
   waitForFirebaseAndInit();

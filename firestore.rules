@@ -275,6 +275,7 @@ service cloud.firestore {
           'tournamentLabel',
           'note',
           'consentAccepted',
+          'attended',
           'createdAt'
         ])
         && request.resource.data.firstName is string
@@ -296,7 +297,8 @@ service cloud.firestore {
         && request.resource.data.note is string
         && request.resource.data.note.size() <= 600
         && request.resource.data.consentAccepted is bool
-        && request.resource.data.consentAccepted == true;
+        && request.resource.data.consentAccepted == true
+        && (!('attended' in request.resource.data) || request.resource.data.attended is bool);
 
       allow update: if request.resource.data.keys().hasOnly([
           'firstName',
@@ -306,6 +308,7 @@ service cloud.firestore {
           'tournamentLabel',
           'note',
           'consentAccepted',
+          'attended',
           'createdAt'
         ])
         && request.resource.data.firstName is string
@@ -327,7 +330,8 @@ service cloud.firestore {
         && request.resource.data.note is string
         && request.resource.data.note.size() <= 600
         && request.resource.data.consentAccepted is bool
-        && request.resource.data.consentAccepted == true;
+        && request.resource.data.consentAccepted == true
+        && (!('attended' in request.resource.data) || request.resource.data.attended is bool);
 
       allow delete: if true;
     }

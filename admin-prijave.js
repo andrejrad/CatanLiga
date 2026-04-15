@@ -208,9 +208,15 @@
 
     var thead = document.createElement('thead');
     var headRow = document.createElement('tr');
-    ['Ime i prezime', 'Email', 'Turnir', 'Napomena', 'Vrijeme prijave', '', ''].forEach(function (label, index) {
+    ['✓', 'Ime i prezime', 'Email', 'Napomena', 'Vrijeme prijave', '', ''].forEach(function (label, index) {
       var th = document.createElement('th');
-      th.textContent = label;
+      if (index === 0) {
+        th.innerHTML = '<span title="Prisutan">✓</span>';
+        th.style.width = '3rem';
+        th.style.textAlign = 'center';
+      } else {
+        th.textContent = label;
+      }
       if (index >= 5) {
         th.className = 'tournament-action-head';
       }
@@ -222,14 +228,29 @@
     items.forEach(function (item) {
       var row = document.createElement('tr');
 
+      var attendedTd = document.createElement('td');
+      attendedTd.style.textAlign = 'center';
+      var attendedCheckbox = document.createElement('input');
+      attendedCheckbox.type = 'checkbox';
+      attendedCheckbox.checked = !!item.attended;
+      attendedCheckbox.addEventListener('change', async function() {
+        try {
+          await registrationsCollection.doc(item.id).update({
+            attended: attendedCheckbox.checked
+          });
+        } catch (error) {
+          console.error(error);
+          attendedCheckbox.checked = !attendedCheckbox.checked;
+          setStatus('Ažuriranje prisustva nije uspjelo.', true);
+        }
+      });
+      attendedTd.appendChild(attendedCheckbox);
+
       var fullNameTd = document.createElement('td');
       fullNameTd.textContent = (item.firstName || '') + ' ' + (item.lastName || '');
 
       var emailTd = document.createElement('td');
       emailTd.textContent = item.email || '-';
-
-      var tournamentTd = document.createElement('td');
-      tournamentTd.textContent = item.tournamentLabel || '-';
 
       var noteTd = document.createElement('td');
       noteTd.textContent = item.note || '-';
@@ -277,9 +298,9 @@
       });
       deleteTd.appendChild(deleteButton);
 
+      row.appendChild(attendedTd);
       row.appendChild(fullNameTd);
       row.appendChild(emailTd);
-      row.appendChild(tournamentTd);
       row.appendChild(noteTd);
       row.appendChild(createdTd);
       row.appendChild(editTd);
@@ -376,6 +397,13 @@
 
   function applyFilters() {
     listEl.innerHTML = '';
+    
+    var selectedTournament = filterTournamentSelect.value;
+    
+    if (!selectedTournament) {
+      listEl.appendChild(createMessage('Odaberi turnir za prikaz prijava.'));
+      return;
+    }
 
     if (!allRegistrations.length) {
       listEl.appendChild(createMessage('Još nema prijava.'));
@@ -385,7 +413,7 @@
     var filtered = getFilteredRegistrations();
 
     if (!filtered.length) {
-      listEl.appendChild(createMessage('Nema prijava za odabrani filter.'));
+      listEl.appendChild(createMessage('Nema prijava za odabrani turnir.'));
       return;
     }
 
