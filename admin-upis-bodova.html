@@ -59,14 +59,18 @@
           <div id="scoreRound1List" class="tournament-list" aria-live="polite">
             <p class="admin-note">Odaberi turnir za prikaz tablice.</p>
           </div>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 1">
+            <button id="scoreRound1LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+            <button id="scoreRound1UnlockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Otključaj stol</button>
+          </div>
+          <p id="scoreRound1LockStatus" class="form-status" aria-live="polite"></p>
           <h2 class="about-heading"><strong>Status stolova</strong></h2>
           <div id="scoreRound1TableStatus" class="tournament-list" aria-live="polite">
             <p class="admin-note">Status stolova će biti prikazan nakon odabira turnira.</p>
           </div>
-          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 1">
-            <button id="scoreRound1LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje svih stolova runde 1">
+            <button id="scoreRound1LockAllBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi sve stolove</button>
           </div>
-          <p id="scoreRound1LockStatus" class="form-status" aria-live="polite"></p>
         </article>
 
         <article class="bodovanje-panel" id="panel-score-r2" role="tabpanel" aria-labelledby="tab-score-r2" hidden>
@@ -85,14 +89,18 @@
           <div id="scoreRound2List" class="tournament-list" aria-live="polite">
             <p class="admin-note">Odaberi turnir za prikaz tablice.</p>
           </div>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 2">
+            <button id="scoreRound2LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+            <button id="scoreRound2UnlockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Otključaj stol</button>
+          </div>
+          <p id="scoreRound2LockStatus" class="form-status" aria-live="polite"></p>
           <h2 class="about-heading"><strong>Status stolova</strong></h2>
           <div id="scoreRound2TableStatus" class="tournament-list" aria-live="polite">
             <p class="admin-note">Status stolova će biti prikazan nakon odabira turnira.</p>
           </div>
-          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 2">
-            <button id="scoreRound2LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje svih stolova runde 2">
+            <button id="scoreRound2LockAllBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi sve stolove</button>
           </div>
-          <p id="scoreRound2LockStatus" class="form-status" aria-live="polite"></p>
         </article>
 
         <article class="bodovanje-panel" id="panel-score-r3" role="tabpanel" aria-labelledby="tab-score-r3" hidden>
@@ -111,14 +119,18 @@
           <div id="scoreRound3List" class="tournament-list" aria-live="polite">
             <p class="admin-note">Odaberi turnir za prikaz tablice.</p>
           </div>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 3">
+            <button id="scoreRound3LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+            <button id="scoreRound3UnlockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Otključaj stol</button>
+          </div>
+          <p id="scoreRound3LockStatus" class="form-status" aria-live="polite"></p>
           <h2 class="about-heading"><strong>Status stolova</strong></h2>
           <div id="scoreRound3TableStatus" class="tournament-list" aria-live="polite">
             <p class="admin-note">Status stolova će biti prikazan nakon odabira turnira.</p>
           </div>
-          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje stola runde 3">
-            <button id="scoreRound3LockTableBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi stol</button>
+          <div class="page-cta-row page-cta-row-left" aria-label="Zaključavanje svih stolova runde 3">
+            <button id="scoreRound3LockAllBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Zaključi sve stolove</button>
           </div>
-          <p id="scoreRound3LockStatus" class="form-status" aria-live="polite"></p>
         </article>
       </section>
     </div>
@@ -127,6 +139,6 @@
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
     <script defer src="admin-auth.js?v=1"></script>
-    <script defer src="admin-upis-bodova.js?v=3"></script>
+    <script defer src="admin-upis-bodova.js?v=5"></script>
   </body>
 </html>

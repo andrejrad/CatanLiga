@@ -1662,7 +1662,39 @@ body {
 }
 
 .player-stats-table .tournament-table {
-  min-width: 26rem;
+  min-width: 0;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.player-stats-table .tournament-table .player-stats-col-tournament {
+  width: calc(100% - 7.2rem);
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.player-stats-table .tournament-table .player-stats-col-place,
+.player-stats-table .tournament-table .player-stats-col-points {
+  width: 3.6rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+@media (max-width: 39.99rem) {
+  .player-stats-table .tournament-table th,
+  .player-stats-table .tournament-table td {
+    padding: 0.22rem 0.24rem;
+    font-size: 0.74rem;
+  }
+
+  .player-stats-table .tournament-table .player-stats-col-place,
+  .player-stats-table .tournament-table .player-stats-col-points {
+    width: 3.1rem;
+  }
+
+  .player-stats-table .tournament-table .player-stats-col-tournament {
+    width: calc(100% - 6.2rem);
+  }
 }
 
 .btn-secondary:hover {

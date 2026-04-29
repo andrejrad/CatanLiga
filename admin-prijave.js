@@ -399,6 +399,14 @@
     listEl.innerHTML = '';
     
     var selectedTournament = filterTournamentSelect.value;
+    if (!selectedTournament) {
+      setStatus('Ukupno prijava: 0.', false);
+    } else {
+      var tournamentOnlyCount = allRegistrations.filter(function (item) {
+        return (item.tournamentLabel || '') === selectedTournament;
+      }).length;
+      setStatus('Ukupno prijava: ' + tournamentOnlyCount + '.', false);
+    }
     
     if (!selectedTournament) {
       listEl.appendChild(createMessage('Odaberi turnir za prikaz prijava.'));
@@ -436,7 +444,6 @@
 
     renderFilters();
     applyFilters();
-    setStatus('Ukupno prijava: ' + allRegistrations.length + '.', false);
   }
 
   function initFirebaseConnections() {

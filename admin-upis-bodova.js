@@ -13,6 +13,8 @@
       exportBtn: document.getElementById('scoreRound1ExportBtn'),
       tableFilterSelect: document.getElementById('scoreRound1TableFilter'),
       lockBtn: document.getElementById('scoreRound1LockTableBtn'),
+      unlockBtn: document.getElementById('scoreRound1UnlockTableBtn'),
+      lockAllBtn: document.getElementById('scoreRound1LockAllBtn'),
       lockStatusEl: document.getElementById('scoreRound1LockStatus')
     },
     2: {
@@ -22,6 +24,8 @@
       exportBtn: document.getElementById('scoreRound2ExportBtn'),
       tableFilterSelect: document.getElementById('scoreRound2TableFilter'),
       lockBtn: document.getElementById('scoreRound2LockTableBtn'),
+      unlockBtn: document.getElementById('scoreRound2UnlockTableBtn'),
+      lockAllBtn: document.getElementById('scoreRound2LockAllBtn'),
       lockStatusEl: document.getElementById('scoreRound2LockStatus')
     },
     3: {
@@ -31,6 +35,8 @@
       exportBtn: document.getElementById('scoreRound3ExportBtn'),
       tableFilterSelect: document.getElementById('scoreRound3TableFilter'),
       lockBtn: document.getElementById('scoreRound3LockTableBtn'),
+      unlockBtn: document.getElementById('scoreRound3UnlockTableBtn'),
+      lockAllBtn: document.getElementById('scoreRound3LockAllBtn'),
       lockStatusEl: document.getElementById('scoreRound3LockStatus')
     }
   };
@@ -143,6 +149,12 @@
     roundViews[round].exportBtn.disabled = !isEnabled;
     roundViews[round].tableFilterSelect.disabled = !isEnabled;
     roundViews[round].lockBtn.disabled = !isEnabled;
+    if (roundViews[round].unlockBtn) {
+      roundViews[round].unlockBtn.disabled = !isEnabled;
+    }
+    if (roundViews[round].lockAllBtn) {
+      roundViews[round].lockAllBtn.disabled = !isEnabled;
+    }
   }
 
   function setAllRoundsEmptyState(message) {
@@ -331,9 +343,23 @@
     var selectedTable = Number(tableFilterByRound[round] || 0);
     var rows = getRowsForSelectedTable(round);
     var lockBtn = roundViews[round].lockBtn;
+    var unlockBtn = roundViews[round].unlockBtn;
+    var lockAllBtn = roundViews[round].lockAllBtn;
+    var allRows = buildRoundRows(round);
+
+    if (lockAllBtn) {
+      if (!selectedTournament || !allRows.length) {
+        lockAllBtn.disabled = true;
+      } else {
+        lockAllBtn.disabled = allRows.every(function (row) { return row.locked; });
+      }
+    }
 
     if (!selectedTournament || !selectedTable || !rows.length) {
       lockBtn.disabled = true;
+      if (unlockBtn) {
+        unlockBtn.disabled = true;
+      }
       setRoundLockStatus(round, 'Za zaključavanje odaberi stol u filteru.', false);
       return;
     }
@@ -341,11 +367,17 @@
     var allLocked = rows.every(function (row) { return row.locked; });
     if (allLocked) {
       lockBtn.disabled = true;
+      if (unlockBtn) {
+        unlockBtn.disabled = false;
+      }
       setRoundLockStatus(round, 'Odabrani stol je već zaključen.', false);
       return;
     }
 
     lockBtn.disabled = false;
+    if (unlockBtn) {
+      unlockBtn.disabled = true;
+    }
     setRoundLockStatus(round, 'Nakon zaključavanja više nije moguće uređivati Mjesto i VP za taj stol.', false);
   }
 
@@ -711,6 +743,142 @@
     }
   }
 
+  async function unlockSelectedTable(round) {
+    if (!selectedTournament) {
+      setStatus('Odaberi turnir prije otključavanja.', true);
+      return;
+    }
+
+    var selectedTable = Number(tableFilterByRound[round] || 0);
+    if (!selectedTable) {
+      setStatus('Za otključavanje odaberi broj stola u filteru.', true);
+      return;
+    }
+
+    var rows = getRowsForSelectedTable(round);
+    if (!rows.length) {
+      setStatus('Nema igrača za odabrani stol.', true);
+      return;
+    }
+
+    var lockedRows = rows.filter(function (row) { return row.locked; });
+    if (!lockedRows.length) {
+      setStatus('Odabrani stol je već otključan.', false);
+      refreshLockUi(round);
+      return;
+    }
+
+    var batch = db.batch();
+    lockedRows.forEach(function (row) {
+      var docRef = roundScoresCollection.doc(getRoundScoreDocId(round, row.registrationId));
+      batch.set(docRef, {
+        locked: false,
+        lockedAt: firebase.firestore.FieldValue.delete(),
+        roundPoints: firebase.firestore.FieldValue.delete(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      var existing = scoreValuesByRound[round][row.registrationId] || {};
+      scoreValuesByRound[round][row.registrationId] = {
+        place: existing.place,
+        vp: existing.vp,
+        locked: false,
+        roundPoints: null
+      };
+    });
+
+    try {
+      await batch.commit();
+      renderRoundTable(round);
+      updateTabAvailability();
+      setStatus('Stol ' + selectedTable + ' u rundi ' + round + ' je otključan za izmjene.', false);
+    } catch (error) {
+      console.error(error);
+      setStatus('Otključavanje stola nije uspjelo.', true);
+    }
+  }
+
+  async function lockAllTables(round) {
+    if (!selectedTournament) {
+      setStatus('Odaberi turnir prije zaključavanja.', true);
+      return;
+    }
+
+    var rows = buildRoundRows(round);
+    if (!rows.length) {
+      setStatus('Runda ' + round + ' nema igrača za zaključavanje.', true);
+      return;
+    }
+
+    var unlockedRows = rows.filter(function (row) { return !row.locked; });
+    if (!unlockedRows.length) {
+      setStatus('Svi stolovi u rundi ' + round + ' su već zaključani.', false);
+      refreshLockUi(round);
+      return;
+    }
+
+    var confirmed = window.confirm('Jesi li siguran da želiš zaključiti sve stolove u rundi ' + round + '?');
+    if (!confirmed) {
+      return;
+    }
+
+    var hasMissing = unlockedRows.some(function (row) {
+      var data = scoreValuesByRound[round][row.registrationId] || {};
+      return !Number.isInteger(data.place) || data.place <= 0 || !Number.isInteger(data.vp) || data.vp < 0;
+    });
+
+    if (hasMissing) {
+      setStatus('Prije zaključavanja svih stolova unesi Mjesto i VP za sve nezaključane igrače.', true);
+      return;
+    }
+
+    var batch = db.batch();
+
+    unlockedRows.forEach(function (row) {
+      var data = scoreValuesByRound[round][row.registrationId] || {};
+      var roundPoints = calculateRoundPoints(data.place, data.vp);
+      var docRef = roundScoresCollection.doc(getRoundScoreDocId(round, row.registrationId));
+
+      batch.set(docRef, {
+        tournamentId: selectedTournament.id,
+        tournamentLabel: getTournamentLabel(selectedTournament),
+        round: round,
+        registrationId: row.registrationId,
+        playerName: row.playerName,
+        tableNumber: row.tableNumber,
+        place: data.place,
+        vp: data.vp,
+        roundPoints: roundPoints,
+        locked: true,
+        lockedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+
+      scoreValuesByRound[round][row.registrationId] = {
+        place: data.place,
+        vp: data.vp,
+        locked: true,
+        roundPoints: roundPoints
+      };
+    });
+
+    try {
+      await batch.commit();
+      renderRoundTable(round);
+      updateTabAvailability();
+
+      if (isRoundFullyLocked(round) && round < 3) {
+        var nextRound = round + 1;
+        setStatus('Svi stolovi u rundi ' + round + ' su zaključani. Sada možeš prijeći na rundu ' + nextRound + '.', false);
+      } else {
+        setStatus('Svi nezaključani stolovi u rundi ' + round + ' su zaključani.', false);
+      }
+    } catch (error) {
+      console.error(error);
+      setStatus('Zaključavanje svih stolova nije uspjelo.', true);
+    }
+  }
+
   function csvEscape(value) {
     var stringValue = String(value == null ? '' : value);
     return '"' + stringValue.replace(/"/g, '""') + '"';
@@ -996,6 +1164,18 @@
     roundViews[round].lockBtn.addEventListener('click', function () {
       lockSelectedTable(round);
     });
+
+    if (roundViews[round].unlockBtn) {
+      roundViews[round].unlockBtn.addEventListener('click', function () {
+        unlockSelectedTable(round);
+      });
+    }
+
+    if (roundViews[round].lockAllBtn) {
+      roundViews[round].lockAllBtn.addEventListener('click', function () {
+        lockAllTables(round);
+      });
+    }
   });
 
   waitForFirebaseAndInit();

@@ -31,6 +31,10 @@
   var registrationsById = {};
   var bonusByPlace = {};
   var scoreCoefficient = 0.5;
+  var sortState = {
+    key: 'lastName',
+    direction: 'asc'
+  };
   var statsLoadState = {
     scores: false,
     tournaments: false,
@@ -242,6 +246,14 @@
           return score.tournamentId === tournamentId;
         });
 
+        var playerTournamentScores = allScores
+          .filter(function (score) {
+            return score.tournamentId === tournamentId && getScorePlayerKey(score) === playerKey;
+          })
+          .sort(function (a, b) {
+            return (a.round || 0) - (b.round || 0);
+          });
+
         var ranking = aggregateTournament(tournamentScores);
         var playerIndex = ranking.findIndex(function (item) {
           return item.key === playerKey;
@@ -260,6 +272,13 @@
           tournamentLabel: formatTournamentLabel(tournament),
           place: playerIndex + 1,
           totalPoints: ranking[playerIndex].totalPoints,
+          roundDetails: playerTournamentScores.map(function (score) {
+            return {
+              round: score.round || '-',
+              place: Number.isInteger(score.place) ? score.place : '-',
+              points: getComputedPoints(score)
+            };
+          }),
           sortValue: getTournamentSortValue(tournamentId)
         };
       })
@@ -295,6 +314,15 @@
     ['Turnir', 'Mjesto', 'Bodovi'].forEach(function (label) {
       var th = document.createElement('th');
       th.textContent = label;
+      if (label === 'Turnir') {
+        th.className = 'player-stats-col-tournament';
+      }
+      if (label === 'Mjesto') {
+        th.className = 'player-stats-col-place';
+      }
+      if (label === 'Bodovi') {
+        th.className = 'player-stats-col-points';
+      }
       headRow.appendChild(th);
     });
     thead.appendChild(headRow);
@@ -304,20 +332,44 @@
       var row = document.createElement('tr');
 
       var tdTournament = document.createElement('td');
+      tdTournament.className = 'player-stats-col-tournament';
       tdTournament.textContent = item.tournamentLabel;
 
       var tdPlace = document.createElement('td');
+      tdPlace.className = 'player-stats-col-place';
       tdPlace.textContent = String(item.place) + '.';
-      tdPlace.style.textAlign = 'center';
 
       var tdPoints = document.createElement('td');
+      tdPoints.className = 'player-stats-col-points';
       tdPoints.textContent = formatPoints(item.totalPoints);
-      tdPoints.style.textAlign = 'right';
 
       row.appendChild(tdTournament);
       row.appendChild(tdPlace);
       row.appendChild(tdPoints);
       tbody.appendChild(row);
+
+      var detailRow = document.createElement('tr');
+      detailRow.className = 'player-stats-round-row';
+
+      var detailTd = document.createElement('td');
+      detailTd.colSpan = 3;
+
+      if (item.roundDetails.length) {
+        item.roundDetails.forEach(function (detail) {
+          var line = document.createElement('div');
+          line.textContent = 'Runda ' + detail.round + ': mjesto ' + detail.place + ', bodovi ' + formatPoints(detail.points);
+          detailTd.appendChild(line);
+        });
+      } else {
+        detailTd.textContent = 'Nema podataka po rundama.';
+      }
+
+      detailTd.style.fontSize = '0.78rem';
+      detailTd.style.color = '#f3d9b1';
+      detailTd.style.background = 'rgba(30, 14, 6, 0.45)';
+
+      detailRow.appendChild(detailTd);
+      tbody.appendChild(detailRow);
     });
 
     table.appendChild(thead);
@@ -348,6 +400,28 @@
         })
       : allPlayers;
 
+    filtered = filtered.slice().sort(function (a, b) {
+      if (sortState.key === 'registrationCount') {
+        var countCmp = (a.registrationCount || 0) - (b.registrationCount || 0);
+        if (countCmp === 0) {
+          countCmp = a.lastName.localeCompare(b.lastName, 'hr', { sensitivity: 'base' });
+          if (countCmp === 0) {
+            countCmp = a.firstName.localeCompare(b.firstName, 'hr', { sensitivity: 'base' });
+          }
+        }
+        return sortState.direction === 'asc' ? countCmp : -countCmp;
+      }
+
+      var fieldA = (a[sortState.key] || '').toString();
+      var fieldB = (b[sortState.key] || '').toString();
+      var textCmp = fieldA.localeCompare(fieldB, 'hr', { sensitivity: 'base' });
+      if (textCmp === 0) {
+        textCmp = (a.registrationCount || 0) - (b.registrationCount || 0);
+      }
+
+      return sortState.direction === 'asc' ? textCmp : -textCmp;
+    });
+
     listEl.innerHTML = '';
 
     if (filtered.length === 0) {
@@ -366,9 +440,52 @@
 
     var thead = document.createElement('thead');
     var headRow = document.createElement('tr');
-    ['Ime', 'Prezime', 'Email', 'Prijava', 'Akcije'].forEach(function (label) {
+
+    function getSortArrow(key) {
+      if (sortState.key !== key) {
+        return '';
+      }
+      return sortState.direction === 'asc' ? ' ▲' : ' ▼';
+    }
+
+    function createHeader(label, sortKey) {
       var th = document.createElement('th');
-      th.textContent = label;
+      if (!sortKey) {
+        th.textContent = label;
+        return th;
+      }
+
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'nav-btn';
+      btn.style.fontSize = '0.82rem';
+      btn.style.fontWeight = '700';
+      btn.style.letterSpacing = '0.02em';
+      btn.style.textAlign = 'left';
+      btn.style.textShadow = 'none';
+      btn.textContent = label + getSortArrow(sortKey);
+      btn.setAttribute('aria-label', 'Sortiraj po ' + label);
+      btn.addEventListener('click', function () {
+        if (sortState.key === sortKey) {
+          sortState.direction = sortState.direction === 'asc' ? 'desc' : 'asc';
+        } else {
+          sortState.key = sortKey;
+          sortState.direction = 'asc';
+        }
+        renderPlayers();
+      });
+
+      th.appendChild(btn);
+      return th;
+    }
+
+    [
+      createHeader('Ime', 'firstName'),
+      createHeader('Prezime', 'lastName'),
+      createHeader('Email', ''),
+      createHeader('Prijava', 'registrationCount'),
+      createHeader('Akcije', '')
+    ].forEach(function (th) {
       headRow.appendChild(th);
     });
     thead.appendChild(headRow);
