@@ -8,6 +8,8 @@
   var timeInput = document.getElementById('tournamentTime');
   var roundInput = document.getElementById('tournamentRound');
   var registrationCloseHoursInput = document.getElementById('tournamentRegistrationCloseHours');
+  var maxCapacityInput = document.getElementById('tournamentMaxCapacity');
+  var activeInput = document.getElementById('tournamentActive');
   var statusEl = document.getElementById('tournamentFormStatus');
   var listEl = document.getElementById('tournamentList');
   var filterRoundSelect = document.getElementById('tournamentFilterRound');
@@ -29,7 +31,7 @@
   var allPartners = [];
   var allTournaments = [];
 
-  if (!form || !dateInput || !venueSelect || !timeInput || !roundInput || !registrationCloseHoursInput || !statusEl || !listEl) {
+  if (!form || !dateInput || !venueSelect || !timeInput || !roundInput || !registrationCloseHoursInput || !maxCapacityInput || !activeInput || !statusEl || !listEl) {
     return;
   }
 
@@ -49,6 +51,7 @@
 
   function resetEditMode() {
     editingTournamentId = null;
+    activeInput.value = 'true';
     if (submitButton) {
       submitButton.textContent = 'Dodaj turnir';
     }
@@ -63,6 +66,8 @@
     timeInput.value = item.time || '';
     roundInput.value = item.round || '';
     registrationCloseHoursInput.value = String(item.registrationCloseHours == null ? 0 : item.registrationCloseHours);
+    maxCapacityInput.value = String(item.maxCapacity == null ? 0 : item.maxCapacity);
+    activeInput.value = item.active === false ? 'false' : 'true';
     venueSelect.value = item.venueId || '';
 
     if (submitButton) {
@@ -413,7 +418,7 @@
       var toggleButton = document.createElement('button');
       toggleButton.type = 'button';
       toggleButton.className = 'partner-action-btn partner-action-btn-secondary tournament-icon-btn';
-      toggleButton.textContent = item.active === false ? '↺' : '⊘';
+      toggleButton.textContent = item.active === false ? 'On' : 'Off';
       toggleButton.setAttribute('aria-label', item.active === false ? 'Aktiviraj turnir' : 'Deaktiviraj turnir');
       toggleButton.title = item.active === false ? 'Aktiviraj' : 'Deaktiviraj';
       toggleButton.addEventListener('click', async function () {
@@ -537,6 +542,7 @@
     var venueName = venueOption ? venueOption.dataset.name || venueOption.textContent : '';
     var round = parseInt(roundInput.value, 10);
     var registrationCloseHours = parseInt(registrationCloseHoursInput.value, 10);
+    var isActive = activeInput.value !== 'false';
     var isEditing = !!editingTournamentId;
 
     if (!tournamentsCollection) {
@@ -579,7 +585,9 @@
         venueName: venueName,
         time: timeInput.value,
         round: round,
-        registrationCloseHours: registrationCloseHours
+        registrationCloseHours: registrationCloseHours,
+        maxCapacity: parseInt(maxCapacityInput.value, 10) || 0,
+        active: isActive
       };
 
       if (isEditing) {
@@ -588,7 +596,6 @@
         resetEditMode();
         setStatus('Turnir je uspješno ažuriran.', false);
       } else {
-        payload.active = true;
         payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         await tournamentsCollection.add(payload);
         form.reset();

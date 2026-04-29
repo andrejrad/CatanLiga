@@ -1,6 +1,6 @@
 (function () {
   var MAX_LOGO_SIZE_BYTES = 10 * 1024 * 1024;
-  var MAX_DESCRIPTION_LENGTH = 130;
+  var MAX_DESCRIPTION_LENGTH = 1000;
   var FIREBASE_WAIT_TRIES = 80;
   var FIREBASE_WAIT_MS = 125;
 
@@ -388,7 +388,7 @@
     }
 
     if (description.length > MAX_DESCRIPTION_LENGTH) {
-      setStatus('Kratki opis može imati maksimalno 130 znakova.', true);
+      setStatus('Kratki opis može imati maksimalno 1000 znakova.', true);
       return;
     }
 

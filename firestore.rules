@@ -30,7 +30,7 @@ service cloud.firestore {
         && request.resource.data.web.size() <= 240
         && (!('active' in request.resource.data) || request.resource.data.active is bool)
         && request.resource.data.description is string
-        && request.resource.data.description.size() <= 130
+        && request.resource.data.description.size() <= 1000
         && request.resource.data.types is list
         && request.resource.data.types.size() > 0
         && request.resource.data.types.size() <= 6;
@@ -48,6 +48,7 @@ service cloud.firestore {
           'time',
           'round',
           'registrationCloseHours',
+          'maxCapacity',
           'active',
           'createdAt'
         ])
@@ -66,6 +67,10 @@ service cloud.firestore {
           || (request.resource.data.registrationCloseHours is int
             && request.resource.data.registrationCloseHours >= 0
             && request.resource.data.registrationCloseHours <= 168))
+        && (!('maxCapacity' in request.resource.data)
+          || (request.resource.data.maxCapacity is int
+            && request.resource.data.maxCapacity >= 0
+            && request.resource.data.maxCapacity <= 2000))
         && (!('active' in request.resource.data) || request.resource.data.active is bool);
     }
 

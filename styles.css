@@ -1071,6 +1071,15 @@ body {
   background: linear-gradient(160deg, rgba(50, 24, 9, 0.74), rgba(24, 10, 4, 0.8));
   box-shadow: 0 12px 28px rgba(16, 7, 3, 0.26);
   overflow: hidden;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.public-partner-card:hover,
+.public-partner-card:focus-visible {
+  border-color: rgba(255, 230, 150, 0.75);
+  transform: translateY(-1px);
+  outline: none;
 }
 
 .public-partner-card > div {
@@ -1174,6 +1183,74 @@ body {
   -webkit-line-clamp: 4;
   -webkit-box-orient: vertical;
   word-break: break-word;
+}
+
+.partner-detail-wrap {
+  margin-top: 1.2rem;
+}
+
+.partner-detail-card {
+  border: 1px solid rgba(255, 220, 150, 0.34);
+  border-radius: 1rem;
+  padding: 0.9rem;
+  background: linear-gradient(160deg, rgba(50, 24, 9, 0.74), rgba(24, 10, 4, 0.8));
+  box-shadow: 0 12px 28px rgba(16, 7, 3, 0.26);
+}
+
+.partner-detail-logo-wrap {
+  width: 100%;
+  height: 10.5rem;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 220, 150, 0.35);
+  background: rgba(16, 8, 4, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  margin-bottom: 0.8rem;
+}
+
+.partner-detail-logo {
+  max-width: 100%;
+  max-height: 100%;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+}
+
+.partner-detail-title {
+  margin: 0 0 0.35rem;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: clamp(1.05rem, 4vw, 1.4rem);
+  color: #fff7e8;
+  text-shadow: 0 1px 6px rgba(20, 8, 0, 0.8);
+}
+
+.partner-detail-meta {
+  margin: 0.25rem 0;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: #ffdca8;
+}
+
+.partner-detail-description {
+  margin: 0.7rem 0;
+  font-size: 0.98rem;
+  line-height: 1.6;
+  color: #ffe9cf;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.partner-detail-link {
+  display: inline-block;
+  margin-top: 0.3rem;
+  font-size: 0.9rem;
+  color: #ffe680;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
 }
 
 .contact-list {
@@ -1680,6 +1757,76 @@ body {
   white-space: nowrap;
 }
 
+.report-jump-nav {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+  gap: 0.5rem;
+  margin: 0.25rem 0 1rem;
+}
+
+.report-jump-btn {
+  display: inline-block;
+  padding: 0.45rem 0.62rem;
+  border: 1px solid rgba(255, 220, 150, 0.45);
+  border-radius: 999px;
+  background: linear-gradient(160deg, rgba(78, 36, 10, 0.84), rgba(28, 14, 6, 0.9));
+  color: #fff7e8;
+  text-decoration: none;
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 4px rgba(20, 8, 0, 0.8);
+}
+
+.report-jump-btn:hover,
+.report-jump-btn:focus-visible {
+  color: #ffe680;
+  border-color: rgba(255, 230, 150, 0.78);
+  outline: none;
+}
+
+.report-section {
+  scroll-margin-top: 0.7rem;
+}
+
+.report-back-to-top {
+  display: inline-block;
+  padding: 0.36rem 0.54rem;
+  border: 1px solid rgba(255, 220, 150, 0.38);
+  border-radius: 999px;
+  background: rgba(40, 20, 8, 0.65);
+  color: #f7dba8;
+  text-decoration: none;
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  font-weight: 700;
+  font-size: 0.68rem;
+  letter-spacing: 0.02em;
+  text-shadow: 0 1px 3px rgba(20, 8, 0, 0.7);
+  transition: all 0.15s ease;
+}
+
+.report-back-to-top:hover {
+  color: #ffe680;
+  border-color: rgba(255, 230, 150, 0.68);
+  background: rgba(55, 28, 10, 0.75);
+}
+
+.tournament-capacity-info {
+  padding: 0.62rem 0.72rem;
+  border-radius: 0.6rem;
+  background: rgba(32, 16, 6, 0.68);
+  border: 1px solid rgba(255, 220, 150, 0.26);
+  margin-top: -0.4rem;
+  margin-bottom: 0.8rem;
+}
+
+.tournament-capacity-info .admin-note {
+  margin: 0;
+}
+
 @media (max-width: 39.99rem) {
   .player-stats-table .tournament-table th,
   .player-stats-table .tournament-table td {
@@ -1694,6 +1841,14 @@ body {
 
   .player-stats-table .tournament-table .player-stats-col-tournament {
     width: calc(100% - 6.2rem);
+  }
+
+  .report-jump-nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .report-jump-btn {
+    font-size: 0.68rem;
   }
 }
 

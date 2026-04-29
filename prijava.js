@@ -11,13 +11,15 @@
   var consentInput = document.getElementById('registrationConsent');
   var statusEl = document.getElementById('registrationFormStatus');
   var submitButton = document.getElementById('registrationSubmitBtn');
+  var capacityInfoEl = document.getElementById('tournamentCapacityInfo');
+  var capacityTextEl = document.getElementById('capacityText');
 
   var db = null;
   var tournamentsCollection = null;
   var registrationsCollection = null;
   var activeTournaments = [];
 
-  if (!form || !firstNameInput || !lastNameInput || !emailInput || !tournamentSelect || !noteInput || !consentInput || !statusEl || !submitButton) {
+  if (!form || !firstNameInput || !lastNameInput || !emailInput || !tournamentSelect || !noteInput || !consentInput || !statusEl || !submitButton || !capacityInfoEl || !capacityTextEl) {
     return;
   }
 
@@ -47,6 +49,63 @@
 
   function normalize(value) {
     return (value || '').trim();
+  }
+
+  function checkTournamentCapacity() {
+    var tournamentId = tournamentSelect.value;
+    
+    if (!tournamentId) {
+      capacityInfoEl.style.display = 'none';
+      return;
+    }
+
+    var selectedTournament = activeTournaments.find(function (t) {
+      return t.id === tournamentId;
+    });
+
+    if (!selectedTournament || !selectedTournament.maxCapacity || selectedTournament.maxCapacity === 0) {
+      capacityInfoEl.style.display = 'none';
+      submitButton.disabled = false;
+      return;
+    }
+
+    // Check current registrations for this tournament
+    if (!registrationsCollection) {
+      capacityInfoEl.style.display = 'none';
+      return;
+    }
+
+    registrationsCollection
+      .where('tournamentId', '==', tournamentId)
+      .get()
+      .then(function (snapshot) {
+        var currentCount = snapshot.size;
+        var maxCapacity = selectedTournament.maxCapacity;
+        var available = Math.max(0, maxCapacity - currentCount);
+        var isFull = currentCount >= maxCapacity;
+
+        capacityInfoEl.style.display = 'block';
+
+        if (isFull) {
+          capacityTextEl.textContent = '⚠️ TURNIR JE POPUNJEN - Nema više slobodnih mjesta';
+          capacityTextEl.style.color = '#ffb6a6';
+          capacityTextEl.style.fontWeight = 'bold';
+          submitButton.disabled = true;
+          submitButton.style.opacity = '0.5';
+          submitButton.style.cursor = 'not-allowed';
+        } else {
+          capacityTextEl.textContent = 'Slobodno još ' + available + ' mjesta od ukupno ' + maxCapacity;
+          capacityTextEl.style.color = '#ffe680';
+          capacityTextEl.style.fontWeight = 'normal';
+          submitButton.disabled = false;
+          submitButton.style.opacity = '1';
+          submitButton.style.cursor = 'pointer';
+        }
+      })
+      .catch(function (err) {
+        console.error('Greška pri provjeri kapaciteta:', err);
+        capacityInfoEl.style.display = 'none';
+      });
   }
 
   function initFirebaseConnections() {
@@ -91,6 +150,11 @@
     submitButton.disabled = false;
     setStatus('', false);
   }
+
+  // Event listener za promjenu odabranog turnira
+  tournamentSelect.addEventListener('change', function () {
+    checkTournamentCapacity();
+  });
 
   function loadActiveTournaments() {
     if (!tournamentsCollection) {
@@ -223,6 +287,23 @@
         setStatus('Ovaj email je već prijavljen za odabrani turnir.', true);
         setSubmitting(false);
         return;
+      }
+
+      // Provjera dostupnosti mjesta
+      var selectedTournament = activeTournaments.find(function (t) {
+        return t.id === tournamentId;
+      });
+
+      if (selectedTournament && selectedTournament.maxCapacity && selectedTournament.maxCapacity > 0) {
+        var regSnapshot = await registrationsCollection
+          .where('tournamentId', '==', tournamentId)
+          .get();
+
+        if (regSnapshot.size >= selectedTournament.maxCapacity) {
+          setStatus('Turnir je popunjen - nema više slobodnih mjesta.', true);
+          setSubmitting(false);
+          return;
+        }
       }
     } catch (error) {
       console.error(error);

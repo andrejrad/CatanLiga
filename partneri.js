@@ -33,6 +33,20 @@
   function renderPartnerCard(data) {
     var card = document.createElement('article');
     card.className = 'public-partner-card';
+    card.setAttribute('role', 'link');
+    card.setAttribute('tabindex', '0');
+
+    function openDetails() {
+      window.location.href = 'partner-detalji.html?id=' + encodeURIComponent(data.id || '');
+    }
+
+    card.addEventListener('click', openDetails);
+    card.addEventListener('keydown', function (event) {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        openDetails();
+      }
+    });
 
     var body = document.createElement('div');
 
@@ -54,24 +68,16 @@
     description.className = 'public-partner-description';
     description.textContent = data.description || '';
 
-    var webLink = null;
-    if (data.web) {
-      webLink = document.createElement('a');
-      webLink.className = 'public-partner-web';
-      webLink.href = normalizeWebUrl(data.web) || '#';
-      webLink.target = '_blank';
-      webLink.rel = 'noopener';
-      webLink.textContent = data.web || '';
-    }
-
     titleRow.appendChild(name);
 
     contentArea.appendChild(titleRow);
     contentArea.appendChild(types);
     contentArea.appendChild(description);
-    if (webLink) {
-      contentArea.appendChild(webLink);
-    }
+
+    var detailsHint = document.createElement('p');
+    detailsHint.className = 'public-partner-web';
+    detailsHint.textContent = 'Klikni za detalje';
+    contentArea.appendChild(detailsHint);
 
     var squareCard = document.createElement('div');
     squareCard.className = 'public-partner-square';
@@ -96,6 +102,7 @@
       if (data.active === false) {
         return;
       }
+      data.id = doc.id;
       partners.push(data);
     });
 

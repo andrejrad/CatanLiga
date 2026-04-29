@@ -53,6 +53,19 @@
           <input id="tournamentRegistrationCloseHours" name="tournamentRegistrationCloseHours" type="number" min="0" step="1" value="0" required />
         </label>
 
+        <label class="form-field">
+          <span class="form-label">Maksimalni broj prijava (0 = neograničeno)</span>
+          <input id="tournamentMaxCapacity" name="tournamentMaxCapacity" type="number" min="0" step="1" value="0" />
+        </label>
+
+        <label class="form-field">
+          <span class="form-label">Status turnira</span>
+          <select id="tournamentActive" name="tournamentActive" required>
+            <option value="true">On</option>
+            <option value="false">Off</option>
+          </select>
+        </label>
+
         <p id="tournamentFormStatus" class="form-status" aria-live="polite"></p>
 
         <div class="page-cta-row page-cta-row-left">
@@ -98,6 +111,6 @@
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
     <script defer src="admin-auth.js?v=1"></script>
-    <script defer src="admin-turniri.js?v=12"></script>
+    <script defer src="admin-turniri.js?v=13"></script>
   </body>
 </html>

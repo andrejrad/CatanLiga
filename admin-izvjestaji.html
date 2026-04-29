@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="hr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
+    <title>Admin - Izvještaji</title>
+    <link rel="icon" type="image/png" href="Assets/favicon.png?v=2" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css?v=84" />
+  </head>
+  <body>
+    <div class="bg" aria-hidden="true"></div>
+    <a href="admin.html" aria-label="Natrag na Admin">
+      <img class="logo-corner logo-clickable" src="Assets/Logo.png" alt="Catan Liga Zagreb logo" />
+    </a>
+    <h1 class="page-title page-title-flow">Izvještaji</h1>
+    <div class="page-content">
+      <p id="izvjestajStatus" class="form-status" aria-live="polite">Učitavanje podataka...</p>
+
+      <section class="bodovanje-tabs" aria-label="Izvještaji">
+        <div class="bodovanje-tablist" role="tablist" aria-label="Izvještaji tabovi">
+          <button
+            class="bodovanje-tab is-active"
+            id="tab-turniri"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            aria-controls="panel-turniri"
+            data-tab-target="panel-turniri"
+          >
+            PO TURNIRU
+          </button>
+          <button
+            class="bodovanje-tab"
+            id="tab-liga"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            aria-controls="panel-liga"
+            data-tab-target="panel-liga"
+            tabindex="-1"
+          >
+            LIGA
+          </button>
+        </div>
+
+        <!-- Per-tournament panel -->
+        <article class="bodovanje-panel is-active" id="panel-turniri" role="tabpanel" aria-labelledby="tab-turniri">
+          <p class="admin-note">Pregled svakog turnira: odaziv, no-show, novi i povratni igrači, pobjednik.</p>
+          <div id="tournamentReportRecords" class="player-stats-summary" style="margin-bottom: 1.2rem;"></div>
+          <div id="tournamentReportTable"></div>
+        </article>
+
+        <!-- Liga panel -->
+        <article class="bodovanje-panel" id="panel-liga" role="tabpanel" aria-labelledby="tab-liga">
+          <div class="report-jump-nav" id="liga-nav-top" aria-label="Brza navigacija izvještaja lige">
+            <a class="report-jump-btn" href="#liga-sekcija-ranking">Ukupni ranking</a>
+            <a class="report-jump-btn" href="#liga-sekcija-winners">Najpobjednički</a>
+            <a class="report-jump-btn" href="#liga-sekcija-konzistentnost">Konzistentnost</a>
+            <a class="report-jump-btn" href="#liga-sekcija-aktivnost">Aktivnost</a>
+            <a class="report-jump-btn" href="#liga-sekcija-rast">Rast baze</a>
+            <a class="report-jump-btn" href="#liga-sekcija-lokacije">Po lokaciji</a>
+          </div>
+
+          <section id="liga-sekcija-ranking" class="report-section">
+            <h2 class="about-heading" style="margin-top: 0.2rem;">Ukupni ranking</h2>
+            <div id="ligaRanking"></div>
+          </section>
+
+          <section id="liga-sekcija-winners" class="report-section">
+            <h2 class="about-heading" style="margin-top: 1.6rem;">Najpobjednički igrači</h2>
+            <p class="admin-note" style="margin-bottom: 0.6rem; font-size: 0.85rem;">Sortirano po broju pobjeda (1. mjesta), zatim broju podija (top 3) kroz sve turnire.</p>
+            <div id="ligaWinners"></div>
+          </section>
+
+          <section id="liga-sekcija-konzistentnost" class="report-section">
+            <h2 class="about-heading" style="margin-top: 1.6rem;">Konzistentnost igrača</h2>
+            <p class="admin-note" style="margin-bottom: 0.6rem; font-size: 0.85rem;">Sortirano po prosječnom plasmanu (niže = bolje). Samo igrači s ≥ 2 odigrana turnira.</p>
+            <div id="ligaConsistency"></div>
+          </section>
+
+          <section id="liga-sekcija-aktivnost" class="report-section">
+            <h2 class="about-heading" style="margin-top: 1.6rem;">Aktivnost igrača</h2>
+            <p class="admin-note" style="margin-bottom: 0.6rem; font-size: 0.85rem;">Sortirano po broju odigranih turnira.</p>
+            <div id="ligaActivity"></div>
+          </section>
+
+          <section id="liga-sekcija-rast" class="report-section">
+            <h2 class="about-heading" style="margin-top: 1.6rem;">Rast baze igrača</h2>
+            <p class="admin-note" style="margin-bottom: 0.6rem; font-size: 0.85rem;">Novi igrači i kumulativni broj jedinstvenih igrača po turniru.</p>
+            <div id="ligaGrowth"></div>
+          </section>
+
+          <section id="liga-sekcija-lokacije" class="report-section">
+            <h2 class="about-heading" style="margin-top: 1.6rem;">Statistika po lokaciji</h2>
+            <div id="ligaVenue"></div>
+          </section>
+        </article>
+      </section>
+    </div>
+
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="admin-auth.js?v=1"></script>
+    <script defer src="admin-izvjestaji.js?v=1"></script>
+  </body>
+</html>
