@@ -1,31 +1,43 @@
 (function () {
   var FIREBASE_WAIT_TRIES = 80;
   var FIREBASE_WAIT_MS = 125;
-  var SESSION_KEY = 'adminUnlocked';
-  var SESSION_TIME_KEY = 'adminUnlockedAt';
+  var SESSION_KEY_PREFIX = 'adminUnlocked';
+  var SESSION_TIME_KEY_PREFIX = 'adminUnlockedAt';
   var SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12h
+  var currentEnvironment = 'production';
+
+  function getSessionKey() {
+    return SESSION_KEY_PREFIX + ':' + currentEnvironment;
+  }
+
+  function getSessionTimeKey() {
+    return SESSION_TIME_KEY_PREFIX + ':' + currentEnvironment;
+  }
+
+  function clearSession() {
+    sessionStorage.removeItem(getSessionKey());
+    sessionStorage.removeItem(getSessionTimeKey());
+  }
 
   function redirectToHome() {
     window.location.replace('index.html');
   }
 
   function isSessionValid() {
-    var unlocked = sessionStorage.getItem(SESSION_KEY) === '1';
+    var unlocked = sessionStorage.getItem(getSessionKey()) === '1';
     if (!unlocked) {
       return false;
     }
 
-    var unlockedAtRaw = sessionStorage.getItem(SESSION_TIME_KEY);
+    var unlockedAtRaw = sessionStorage.getItem(getSessionTimeKey());
     var unlockedAt = Number(unlockedAtRaw || 0);
     if (!Number.isFinite(unlockedAt) || unlockedAt <= 0) {
-      sessionStorage.removeItem(SESSION_KEY);
-      sessionStorage.removeItem(SESSION_TIME_KEY);
+      clearSession();
       return false;
     }
 
     if (Date.now() - unlockedAt > SESSION_TTL_MS) {
-      sessionStorage.removeItem(SESSION_KEY);
-      sessionStorage.removeItem(SESSION_TIME_KEY);
+      clearSession();
       return false;
     }
 
@@ -33,8 +45,8 @@
   }
 
   function unlockSession() {
-    sessionStorage.setItem(SESSION_KEY, '1');
-    sessionStorage.setItem(SESSION_TIME_KEY, String(Date.now()));
+    sessionStorage.setItem(getSessionKey(), '1');
+    sessionStorage.setItem(getSessionTimeKey(), String(Date.now()));
   }
 
   function waitForFirebase(triesLeft, onReady) {
@@ -52,6 +64,20 @@
     setTimeout(function () {
       waitForFirebase(triesLeft - 1, onReady);
     }, FIREBASE_WAIT_MS);
+  }
+
+  function resolveActiveEnvironment(onReady) {
+    var defaultApp = firebase.apps && firebase.apps.length ? firebase.apps[0] : null;
+    if (!defaultApp) {
+      alert('Firebase nije inicijaliziran. Pokušaj ponovno.');
+      redirectToHome();
+      return;
+    }
+
+    var projectId = (defaultApp.options && defaultApp.options.projectId) || '';
+    currentEnvironment = projectId === 'catan-liga-staging' ? 'staging' : 'production';
+
+    onReady();
   }
 
   function requestPassword(expectedPassword) {
@@ -79,39 +105,41 @@
   }
 
   function startAuth() {
-    if (isSessionValid()) {
-      return;
-    }
-
     waitForFirebase(FIREBASE_WAIT_TRIES, function () {
-      var db = firebase.firestore();
+      resolveActiveEnvironment(function () {
+        if (isSessionValid()) {
+          return;
+        }
 
-      db.collection('adminSettings')
-        .doc('access')
-        .get()
-        .then(function (doc) {
-          if (!doc.exists) {
-            alert('Admin lozinka nije postavljena u bazi. Kreiraj dokument adminSettings/access s poljem password.');
+        var db = firebase.firestore();
+
+        db.collection('adminSettings')
+          .doc('access')
+          .get()
+          .then(function (doc) {
+            if (!doc.exists) {
+              alert('Admin lozinka nije postavljena u bazi. Kreiraj dokument adminSettings/access s poljem password.');
+              redirectToHome();
+              return;
+            }
+
+            var data = doc.data() || {};
+            var password = data.password;
+
+            if (typeof password !== 'string' || password.length === 0) {
+              alert('Admin lozinka nije ispravno konfigurirana u bazi.');
+              redirectToHome();
+              return;
+            }
+
+            requestPassword(password);
+          })
+          .catch(function (error) {
+            console.error(error);
+            alert('Ne mogu provjeriti admin lozinku.');
             redirectToHome();
-            return;
-          }
-
-          var data = doc.data() || {};
-          var password = data.password;
-
-          if (typeof password !== 'string' || password.length === 0) {
-            alert('Admin lozinka nije ispravno konfigurirana u bazi.');
-            redirectToHome();
-            return;
-          }
-
-          requestPassword(password);
-        })
-        .catch(function (error) {
-          console.error(error);
-          alert('Ne mogu provjeriti admin lozinku.');
-          redirectToHome();
-        });
+          });
+      });
     });
   }
 

@@ -1,5 +1,9 @@
 {
   "projects": {
-    "default": "catan-liga"
-  }
+    "default": "catan-liga",
+    "staging": "catan-liga-staging",
+    "production": "catan-liga"
+  },
+  "targets": {},
+  "etags": {}
 }

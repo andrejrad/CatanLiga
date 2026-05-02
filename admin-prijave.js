@@ -2,6 +2,33 @@
   var FIREBASE_WAIT_TRIES = 80;
   var FIREBASE_WAIT_MS = 125;
 
+  function resolveProjectId() {
+    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+      var app = firebase.apps[0];
+      if (app && app.options && typeof app.options.projectId === 'string' && app.options.projectId.trim()) {
+        return app.options.projectId.trim();
+      }
+    }
+
+    // Hostname fallback for rare race conditions before Firebase init.
+    if (window.location && typeof window.location.hostname === 'string') {
+      if (window.location.hostname.indexOf('catan-liga-staging') !== -1) {
+        return 'catan-liga-staging';
+      }
+    }
+
+    return 'catan-liga';
+  }
+
+  function getMailFunctionBaseUrl() {
+    var projectId = resolveProjectId();
+    return 'https://us-central1-' + projectId + '.cloudfunctions.net';
+  }
+  var DEFAULT_TAB = 'overview';
+
+  var tabButtons = Array.prototype.slice.call(document.querySelectorAll('[data-tab-target]'));
+  var tabPanels = Array.prototype.slice.call(document.querySelectorAll('[data-tab-panel]'));
+
   var form = document.getElementById('registrationAdminForm');
   var firstNameInput = document.getElementById('registrationFirstName');
   var lastNameInput = document.getElementById('registrationLastName');
@@ -15,8 +42,18 @@
 
   var listEl = document.getElementById('registrationsList');
   var statusEl = document.getElementById('registrationsStatus');
+  var formStatusEl = document.getElementById('registrationFormStatus');
   var filterTournamentSelect = document.getElementById('registrationsFilterTournament');
   var searchInput = document.getElementById('registrationsSearch');
+  var bulkTournamentSelect = document.getElementById('bulkEmailTournamentSelect');
+  var bulkSubjectInput = document.getElementById('bulkEmailSubject');
+  var bulkBodyInput = document.getElementById('bulkEmailBody');
+  var bulkAdminPasswordInput = document.getElementById('bulkEmailAdminPassword');
+  var bulkTournamentButton = document.getElementById('bulkEmailTournamentBtn');
+  var bulkAllButton = document.getElementById('bulkEmailAllBtn');
+  var bulkStatusEl = document.getElementById('bulkEmailStatus');
+  var resetStagingDataButton = document.getElementById('resetStagingDataBtn');
+  var resetStagingDataStatusEl = document.getElementById('resetStagingDataStatus');
 
   var db = null;
   var tournamentsCollection = null;
@@ -25,13 +62,32 @@
   var activeTournaments = [];
   var editingRegistrationId = null;
 
-  if (!form || !firstNameInput || !lastNameInput || !emailInput || !tournamentSelect || !noteInput || !consentInput || !submitButton || !cancelEditButton || !exportButton || !listEl || !statusEl || !filterTournamentSelect || !searchInput) {
+  if (!form || !firstNameInput || !lastNameInput || !emailInput || !tournamentSelect || !noteInput || !consentInput || !submitButton || !cancelEditButton || !exportButton || !listEl || !statusEl || !formStatusEl || !filterTournamentSelect || !searchInput || !bulkTournamentSelect || !bulkSubjectInput || !bulkBodyInput || !bulkAdminPasswordInput || !bulkTournamentButton || !bulkAllButton || !bulkStatusEl) {
     return;
   }
 
   function setStatus(message, isError) {
     statusEl.textContent = message;
     statusEl.style.color = isError ? '#ffb6a6' : '#ffe680';
+  }
+
+  function setFormStatus(message, isError) {
+    formStatusEl.textContent = message;
+    formStatusEl.style.color = isError ? '#ffb6a6' : '#ffe680';
+  }
+
+  function setBulkStatus(message, isError) {
+    bulkStatusEl.textContent = message;
+    bulkStatusEl.style.color = isError ? '#ffb6a6' : '#ffe680';
+  }
+
+  function setResetStatus(message, isError) {
+    if (!resetStagingDataStatusEl) {
+      return;
+    }
+
+    resetStagingDataStatusEl.textContent = message;
+    resetStagingDataStatusEl.style.color = isError ? '#ffb6a6' : '#ffe680';
   }
 
   function createMessage(text) {
@@ -47,8 +103,81 @@
     submitButton.style.cursor = isSubmitting ? 'not-allowed' : 'pointer';
   }
 
+  function setBulkSubmitting(isSubmitting) {
+    bulkTournamentButton.disabled = isSubmitting;
+    bulkAllButton.disabled = isSubmitting;
+    bulkTournamentButton.style.opacity = isSubmitting ? '0.7' : '1';
+    bulkAllButton.style.opacity = isSubmitting ? '0.7' : '1';
+    bulkTournamentButton.style.cursor = isSubmitting ? 'not-allowed' : 'pointer';
+    bulkAllButton.style.cursor = isSubmitting ? 'not-allowed' : 'pointer';
+  }
+
   function normalize(value) {
     return (value || '').trim();
+  }
+
+  function isStagingProject() {
+    return resolveProjectId() === 'catan-liga-staging';
+  }
+
+  async function deleteCollectionInBatches(collectionName, batchSize) {
+    var totalDeleted = 0;
+
+    while (true) {
+      var snapshot = await db.collection(collectionName).limit(batchSize).get();
+      if (snapshot.empty) {
+        break;
+      }
+
+      var batch = db.batch();
+      snapshot.docs.forEach(function (doc) {
+        batch.delete(doc.ref);
+      });
+      await batch.commit();
+      totalDeleted += snapshot.size;
+    }
+
+    return totalDeleted;
+  }
+
+  async function resetStagingData() {
+    if (!db) {
+      setResetStatus('Firebase nije spreman. Pokušaj ponovno.', true);
+      return;
+    }
+
+    if (!isStagingProject()) {
+      setResetStatus('Reset je dozvoljen samo na staging projektu.', true);
+      return;
+    }
+
+    var confirmed = window.confirm('Ovo će obrisati sve rasporede stolova i upisane bodove na STAGINGU. Nastaviti?');
+    if (!confirmed) {
+      setResetStatus('Reset podataka je otkazan.', true);
+      return;
+    }
+
+    resetStagingDataButton.disabled = true;
+    resetStagingDataButton.style.opacity = '0.7';
+    resetStagingDataButton.style.cursor = 'not-allowed';
+    setResetStatus('Brisanje staging podataka je u tijeku...', false);
+
+    try {
+      var deletedAssignments = await deleteCollectionInBatches('adminTableAssignments', 400);
+      var deletedScores = await deleteCollectionInBatches('adminRoundScores', 400);
+
+      setResetStatus(
+        'Reset gotovo. Obrisano rasporeda: ' + deletedAssignments + ', bodova: ' + deletedScores + '.',
+        false
+      );
+    } catch (error) {
+      console.error(error);
+      setResetStatus('Reset podataka nije uspio.', true);
+    } finally {
+      resetStagingDataButton.disabled = false;
+      resetStagingDataButton.style.opacity = '1';
+      resetStagingDataButton.style.cursor = 'pointer';
+    }
   }
 
   function formatDateTime(dateObj) {
@@ -85,6 +214,20 @@
     form.reset();
   }
 
+  function activateTab(tabName) {
+    tabButtons.forEach(function (button) {
+      var isActive = button.getAttribute('data-tab-target') === tabName;
+      button.classList.toggle('is-active', isActive);
+      button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+    });
+
+    tabPanels.forEach(function (panel) {
+      var isActive = panel.getAttribute('data-tab-panel') === tabName;
+      panel.classList.toggle('is-active', isActive);
+      panel.hidden = !isActive;
+    });
+  }
+
   function enableEditMode(item) {
     editingRegistrationId = item.id;
     firstNameInput.value = item.firstName || '';
@@ -105,17 +248,24 @@
 
     submitButton.textContent = 'Spremi izmjene';
     cancelEditButton.hidden = false;
-    setStatus('Uređivanje prijave: ' + (item.firstName || '') + ' ' + (item.lastName || '') + '.', false);
+    activateTab('create');
+    setFormStatus('Uređivanje prijave: ' + (item.firstName || '') + ' ' + (item.lastName || '') + '.', false);
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   function renderTournamentOptions() {
     tournamentSelect.innerHTML = '';
+    bulkTournamentSelect.innerHTML = '';
 
     var placeholder = document.createElement('option');
     placeholder.value = '';
     placeholder.textContent = activeTournaments.length ? 'Odaberi turnir' : 'Trenutno nema turnira';
     tournamentSelect.appendChild(placeholder);
+
+    var bulkPlaceholder = document.createElement('option');
+    bulkPlaceholder.value = '';
+    bulkPlaceholder.textContent = activeTournaments.length ? 'Odaberi turnir' : 'Trenutno nema turnira';
+    bulkTournamentSelect.appendChild(bulkPlaceholder);
 
     activeTournaments.forEach(function (item) {
       var option = document.createElement('option');
@@ -123,9 +273,133 @@
       option.textContent = 'Kolo ' + item.round + ' - ' + formatDate(item.date) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
       option.dataset.label = option.textContent;
       tournamentSelect.appendChild(option);
+
+      var bulkOption = document.createElement('option');
+      bulkOption.value = item.id;
+      bulkOption.textContent = option.textContent;
+      bulkOption.dataset.label = option.textContent;
+      bulkTournamentSelect.appendChild(bulkOption);
     });
 
     tournamentSelect.disabled = !activeTournaments.length;
+    bulkTournamentSelect.disabled = !activeTournaments.length;
+  }
+
+  function getBulkFormPayload() {
+    var tournamentId = bulkTournamentSelect.value;
+    var selectedOption = bulkTournamentSelect.options[bulkTournamentSelect.selectedIndex];
+    var tournamentLabel = selectedOption ? selectedOption.dataset.label || selectedOption.textContent : '';
+
+    return {
+      tournamentId: tournamentId,
+      tournamentLabel: tournamentLabel,
+      subject: normalize(bulkSubjectInput.value),
+      body: normalize(bulkBodyInput.value),
+      adminPassword: normalize(bulkAdminPasswordInput.value)
+    };
+  }
+
+  async function callMailFunction(path, payload) {
+    var response = await fetch(getMailFunctionBaseUrl() + path, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(payload)
+    });
+
+    var data = null;
+    try {
+      data = await response.json();
+    } catch (error) {
+      data = null;
+    }
+
+    if (!response.ok || !data || data.ok !== true) {
+      var message = data && data.error ? data.error : 'Slanje maila nije uspjelo.';
+      throw new Error(message);
+    }
+
+    return data;
+  }
+
+  async function sendBulkTournamentEmail() {
+    var payload = getBulkFormPayload();
+
+    if (!payload.tournamentId) {
+      setBulkStatus('Odaberi turnir za slanje.', true);
+      return;
+    }
+
+    if (!payload.subject) {
+      setBulkStatus('Upiši naslov maila.', true);
+      return;
+    }
+
+    if (!payload.body) {
+      setBulkStatus('Upiši tekst maila.', true);
+      return;
+    }
+
+    if (!payload.adminPassword) {
+      setBulkStatus('Upiši admin lozinku za potvrdu slanja.', true);
+      return;
+    }
+
+    setBulkSubmitting(true);
+    setBulkStatus('Slanje maila za odabrano kolo je u tijeku...', false);
+
+    try {
+      var result = await callMailFunction('/sendBulkTournamentEmail', payload);
+      var sent = result.result && result.result.totalRecipients ? result.result.totalRecipients : 0;
+      setBulkStatus('Mail je poslan za odabrano kolo. Primatelja: ' + sent + '.', false);
+      bulkAdminPasswordInput.value = '';
+    } catch (error) {
+      console.error(error);
+      setBulkStatus(error.message || 'Slanje maila nije uspjelo.', true);
+    } finally {
+      setBulkSubmitting(false);
+    }
+  }
+
+  async function sendBulkAllPlayersEmail() {
+    var payload = getBulkFormPayload();
+
+    if (!payload.subject) {
+      setBulkStatus('Upiši naslov maila.', true);
+      return;
+    }
+
+    if (!payload.body) {
+      setBulkStatus('Upiši tekst maila.', true);
+      return;
+    }
+
+    if (!payload.adminPassword) {
+      setBulkStatus('Upiši admin lozinku za potvrdu slanja.', true);
+      return;
+    }
+
+    var confirmed = window.confirm('Poslati mail svim igračima u bazi?');
+    if (!confirmed) {
+      setBulkStatus('Slanje svim igračima je otkazano.', true);
+      return;
+    }
+
+    setBulkSubmitting(true);
+    setBulkStatus('Slanje maila svim igračima je u tijeku...', false);
+
+    try {
+      var result = await callMailFunction('/sendBulkAllPlayersEmail', payload);
+      var sent = result.result && result.result.totalRecipients ? result.result.totalRecipients : 0;
+      setBulkStatus('Mail je poslan svim igračima. Primatelja: ' + sent + '.', false);
+      bulkAdminPasswordInput.value = '';
+    } catch (error) {
+      console.error(error);
+      setBulkStatus(error.message || 'Slanje maila nije uspjelo.', true);
+    } finally {
+      setBulkSubmitting(false);
+    }
   }
 
   function loadActiveTournaments() {
@@ -454,6 +728,11 @@
     db = firebase.firestore();
     tournamentsCollection = db.collection('adminTournaments');
     registrationsCollection = db.collection('registrations');
+
+    if (resetStagingDataButton) {
+      resetStagingDataButton.hidden = !isStagingProject();
+    }
+
     return true;
   }
 
@@ -494,32 +773,32 @@
     var isEditing = !!editingRegistrationId;
 
     if (!registrationsCollection) {
-      setStatus('Firebase nije spreman. Pokušaj ponovno.', true);
+      setFormStatus('Firebase nije spreman. Pokušaj ponovno.', true);
       return;
     }
 
     if (!firstName) {
-      setStatus('Unesi ime.', true);
+      setFormStatus('Unesi ime.', true);
       return;
     }
 
     if (!lastName) {
-      setStatus('Unesi prezime.', true);
+      setFormStatus('Unesi prezime.', true);
       return;
     }
 
     if (!email || email.indexOf('@') === -1) {
-      setStatus('Unesi ispravan email.', true);
+      setFormStatus('Unesi ispravan email.', true);
       return;
     }
 
     if (!tournamentId) {
-      setStatus('Odaberi turnir.', true);
+      setFormStatus('Odaberi turnir.', true);
       return;
     }
 
     if (!consent) {
-      setStatus('Potrebno je prihvatiti Pravila Korištenja i Politiku Privatnosti.', true);
+      setFormStatus('Potrebno je prihvatiti Pravila Korištenja i Politiku Privatnosti.', true);
       return;
     }
 
@@ -537,7 +816,7 @@
     };
 
     setSubmitting(true);
-    setStatus('Provjera duplikata...', false);
+    setFormStatus('Provjera duplikata...', false);
 
     try {
       var dupSnap = await registrationsCollection
@@ -550,33 +829,33 @@
       });
 
       if (duplicate) {
-        setStatus('Ovaj email je već prijavljen za odabrani turnir.', true);
+        setFormStatus('Ovaj email je već prijavljen za odabrani turnir.', true);
         setSubmitting(false);
         return;
       }
     } catch (error) {
       console.error(error);
-      setStatus('Provjera duplikata nije uspjela. Pokušaj ponovno.', true);
+      setFormStatus('Provjera duplikata nije uspjela. Pokušaj ponovno.', true);
       setSubmitting(false);
       return;
     }
 
-    setStatus(isEditing ? 'Spremanje izmjena u tijeku...' : 'Spremanje prijave u tijeku...', false);
+    setFormStatus(isEditing ? 'Spremanje izmjena u tijeku...' : 'Spremanje prijave u tijeku...', false);
 
     try {
       if (isEditing) {
         await registrationsCollection.doc(editingRegistrationId).update(payload);
         resetEditMode();
-        setStatus('Prijava je uspješno ažurirana.', false);
+        setFormStatus('Prijava je uspješno ažurirana.', false);
       } else {
         payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
         await registrationsCollection.add(payload);
         resetEditMode();
-        setStatus('Prijava je uspješno dodana.', false);
+        setFormStatus('Prijava je uspješno dodana.', false);
       }
     } catch (error) {
       console.error(error);
-      setStatus(isEditing ? 'Ažuriranje prijave nije uspjelo.' : 'Dodavanje prijave nije uspjelo.', true);
+      setFormStatus(isEditing ? 'Ažuriranje prijave nije uspjelo.' : 'Dodavanje prijave nije uspjelo.', true);
     } finally {
       setSubmitting(false);
     }
@@ -584,14 +863,29 @@
 
   cancelEditButton.addEventListener('click', function () {
     resetEditMode();
-    setStatus('Uređivanje prijave je otkazano.', false);
+    setFormStatus('Uređivanje prijave je otkazano.', false);
   });
 
   exportButton.addEventListener('click', exportFilteredRegistrationsToCsv);
+  bulkTournamentButton.addEventListener('click', sendBulkTournamentEmail);
+  bulkAllButton.addEventListener('click', sendBulkAllPlayersEmail);
+  if (resetStagingDataButton) {
+    resetStagingDataButton.addEventListener('click', resetStagingData);
+  }
+
+  tabButtons.forEach(function (button) {
+    button.addEventListener('click', function () {
+      activateTab(button.getAttribute('data-tab-target') || DEFAULT_TAB);
+    });
+  });
 
   filterTournamentSelect.addEventListener('change', applyFilters);
   searchInput.addEventListener('input', applyFilters);
 
+  activateTab(DEFAULT_TAB);
   resetEditMode();
+  setFormStatus('', false);
+  setBulkStatus('', false);
+  setResetStatus('', false);
   waitForFirebaseAndSubscribe();
 })();

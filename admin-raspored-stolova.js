@@ -3,6 +3,27 @@
   var FIREBASE_WAIT_MS = 125;
   var PLAYERS_PER_TABLE = 4;
 
+  function resolveProjectId() {
+    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+      var app = firebase.apps[0];
+      if (app && app.options && typeof app.options.projectId === 'string' && app.options.projectId.trim()) {
+        return app.options.projectId.trim();
+      }
+    }
+
+    if (window.location && typeof window.location.hostname === 'string') {
+      if (window.location.hostname.indexOf('catan-liga-staging') !== -1) {
+        return 'catan-liga-staging';
+      }
+    }
+
+    return 'catan-liga';
+  }
+
+  function isStagingProject() {
+    return resolveProjectId() === 'catan-liga-staging';
+  }
+
   var tournamentSelect = document.getElementById('tableTournamentSelect');
   var statusEl = document.getElementById('tablePlanStatus');
 
@@ -13,7 +34,7 @@
       saveBtn: document.getElementById('round1SaveBtn'),
       exportBtn: document.getElementById('round1ExportBtn'),
       tableFilterSelect: document.getElementById('round1TableFilter'),
-      randomBtn: null
+      randomBtn: document.getElementById('round1RandomBtn')
     },
     2: {
       listEl: document.getElementById('round2List'),
@@ -51,6 +72,11 @@
     1: '',
     2: '',
     3: ''
+  };
+  var roundTabButtons = {
+    1: document.getElementById('tab-runda-1'),
+    2: document.getElementById('tab-runda-2'),
+    3: document.getElementById('tab-runda-3')
   };
 
   if (!tournamentSelect || !statusEl || !roundViews[1].listEl || !roundViews[2].listEl || !roundViews[3].listEl) {
@@ -241,6 +267,121 @@
     return '';
   }
 
+  function getRoundConflictWarnings(round, assignmentMap) {
+    var warnings = [];
+    var sourceAssignments = assignmentMap || assignmentsByRound[round] || {};
+
+    if (round <= 1) {
+      return warnings;
+    }
+
+    tournamentRegistrations.forEach(function (registration) {
+      var assignment = sourceAssignments[registration.id] || null;
+      var tableNumber = assignment && assignment.tableNumber;
+
+      if (!Number.isInteger(tableNumber) || tableNumber <= 0) {
+        return;
+      }
+
+      if (hasPlayedTableBeforeRound(registration.id, round, tableNumber)) {
+        warnings.push('Igrač ' + getPlayerName(registration) + ' već je igrao za stolom ' + tableNumber + '.');
+      }
+    });
+
+    return warnings;
+  }
+
+  function buildConflictConfirmationMessage(round, warnings, actionLabel) {
+    var maxPreview = 8;
+    var preview = warnings.slice(0, maxPreview);
+    var lines = [
+      'Pronađeni su konflikti u rasporedu za rundu ' + round + '.',
+      ''
+    ];
+
+    preview.forEach(function (warning) {
+      lines.push('- ' + warning);
+    });
+
+    if (warnings.length > maxPreview) {
+      lines.push('- ... i još ' + (warnings.length - maxPreview) + ' konflikta.');
+    }
+
+    lines.push('');
+    lines.push('Želiš li ipak ' + actionLabel + '?');
+    return lines.join('\n');
+  }
+
+  function getRoundConflictCount(round) {
+    return getRoundConflictWarnings(round).length;
+  }
+
+  function getRoundLabel(round) {
+    var conflictCount = getRoundConflictCount(round);
+    return conflictCount ? 'Runda ' + round + ' (' + conflictCount + ' konflikta)' : 'Runda ' + round;
+  }
+
+  function updateRoundLabels() {
+    Object.keys(roundViews).forEach(function (key) {
+      var round = Number(key);
+      var label = getRoundLabel(round);
+      var tabButton = roundTabButtons[round];
+
+      if (tabButton) {
+        tabButton.textContent = label;
+      }
+    });
+
+    if (typeof tablesRoundBtns !== 'undefined' && tablesRoundBtns) {
+      tablesRoundBtns.forEach(function (btn) {
+        var round = Number(btn.getAttribute('data-round'));
+        btn.textContent = getRoundLabel(round);
+      });
+    }
+  }
+
+  function getTableConflictWarning(round, registration, tableNumber) {
+    if (round <= 1) {
+      return '';
+    }
+
+    if (!Number.isInteger(tableNumber) || tableNumber <= 0) {
+      return '';
+    }
+
+    if (!hasPlayedTableBeforeRound(registration.id, round, tableNumber)) {
+      return '';
+    }
+
+    return 'Igrač je već igrao za stolom ' + tableNumber + ' u ranijoj rundi ovog turnira.';
+  }
+
+  function updateAssignmentConflictState(round, registration, row, tableCell, input) {
+    var existingNote = tableCell.querySelector('.table-assignment-conflict-note');
+    if (existingNote) {
+      existingNote.remove();
+    }
+
+    row.classList.remove('table-assignment-conflict-row');
+    input.classList.remove('table-assignment-conflict-input');
+    input.removeAttribute('title');
+
+    var tableNumber = Number(normalize(input.value));
+    var warning = getTableConflictWarning(round, registration, tableNumber);
+    if (!warning) {
+      return;
+    }
+
+    row.classList.add('table-assignment-conflict-row');
+    input.classList.add('table-assignment-conflict-input');
+    input.title = warning;
+
+    var note = document.createElement('div');
+    note.className = 'table-assignment-conflict-note';
+    note.textContent = warning;
+    tableCell.appendChild(note);
+  }
+
   function buildSummary(round) {
     var summary = {};
     var entries = getRoundEntries(round);
@@ -399,10 +540,13 @@
       input.setAttribute('aria-label', 'Broj stola za ' + getPlayerName(registration));
       input.addEventListener('input', function () {
         setAssignmentValue(round, registration, input.value);
+        updateAssignmentConflictState(round, registration, row, tableTd, input);
         renderRoundFilter(round);
         renderSummary(round);
       });
       tableTd.appendChild(input);
+
+      updateAssignmentConflictState(round, registration, row, tableTd, input);
 
       row.appendChild(nameTd);
       row.appendChild(noteTd);
@@ -426,6 +570,7 @@
     renderSummary(1);
     renderSummary(2);
     renderSummary(3);
+    updateRoundLabels();
   }
 
   function getAssignmentDocId(round, registrationId) {
@@ -442,6 +587,15 @@
     if (validationMessage) {
       setStatus(validationMessage, true);
       return;
+    }
+
+    var conflictWarnings = getRoundConflictWarnings(round);
+    if (conflictWarnings.length) {
+      var confirmedConflictSave = window.confirm(buildConflictConfirmationMessage(round, conflictWarnings, 'spremiti ovaj raspored'));
+      if (!confirmedConflictSave) {
+        setStatus('Spremanje runde ' + round + ' je otkazano zbog konflikta u rasporedu.', true);
+        return;
+      }
     }
 
     var batch = db.batch();
@@ -470,7 +624,11 @@
 
     try {
       await batch.commit();
-      setStatus('Runda ' + round + ' je uspješno spremljena.', false);
+      if (conflictWarnings.length) {
+        setStatus('Runda ' + round + ' je spremljena uz prihvaćen konflikt u rasporedu.', false);
+      } else {
+        setStatus('Runda ' + round + ' je uspješno spremljena.', false);
+      }
     } catch (error) {
       console.error(error);
       setStatus('Spremanje runde ' + round + ' nije uspjelo.', true);
@@ -488,6 +646,233 @@
     return copy;
   }
 
+  function getTableCount(playerCount) {
+    return Math.ceil(playerCount / PLAYERS_PER_TABLE);
+  }
+
+  function buildTableCapacities(playerCount) {
+    var capacities = {};
+    var tableCount = getTableCount(playerCount);
+    var remainder = playerCount % PLAYERS_PER_TABLE;
+
+    for (var tableNumber = 1; tableNumber <= tableCount; tableNumber += 1) {
+      capacities[tableNumber] = PLAYERS_PER_TABLE;
+    }
+
+    if (tableCount > 0 && remainder > 0) {
+      capacities[tableCount] = remainder;
+    }
+
+    return capacities;
+  }
+
+  function getPlayedTablesBeforeRound(registrationId, round) {
+    var playedTables = {};
+
+    for (var currentRound = 1; currentRound < round; currentRound += 1) {
+      var assignment = assignmentsByRound[currentRound][registrationId];
+      if (assignment && Number.isInteger(assignment.tableNumber) && assignment.tableNumber > 0) {
+        playedTables[assignment.tableNumber] = true;
+      }
+    }
+
+    return playedTables;
+  }
+
+  function hasPlayedTableBeforeRound(registrationId, round, tableNumber) {
+    return !!getPlayedTablesBeforeRound(registrationId, round)[tableNumber];
+  }
+
+  function getAvailableTablesForRegistration(registrationId, round, capacities) {
+    var playedTables = getPlayedTablesBeforeRound(registrationId, round);
+
+    return Object.keys(capacities)
+      .map(function (key) { return Number(key); })
+      .filter(function (tableNumber) {
+        return capacities[tableNumber] > 0 && !playedTables[tableNumber];
+      })
+      .sort(function (a, b) { return a - b; });
+  }
+
+  function solvePlayerTableAssignments(players, round, capacities, assignments) {
+    if (players.length === 0) {
+      return true;
+    }
+
+    var rankedPlayers = players.slice().sort(function (a, b) {
+      return a.availableTables.length - b.availableTables.length;
+    });
+    var nextPlayer = rankedPlayers[0];
+    var remainingPlayers = rankedPlayers.slice(1);
+    var candidateTables = shuffle(nextPlayer.availableTables).filter(function (tableNumber) {
+      return capacities[tableNumber] > 0;
+    });
+
+    for (var i = 0; i < candidateTables.length; i += 1) {
+      var tableNumber = candidateTables[i];
+      assignments[nextPlayer.registration.id] = tableNumber;
+      capacities[tableNumber] -= 1;
+
+      var updatedPlayers = [];
+      var isValid = true;
+
+      for (var j = 0; j < remainingPlayers.length; j += 1) {
+        var player = remainingPlayers[j];
+        var nextAvailableTables = player.availableTables.filter(function (candidate) {
+          return capacities[candidate] > 0;
+        });
+
+        if (!nextAvailableTables.length) {
+          isValid = false;
+          break;
+        }
+
+        updatedPlayers.push({
+          registration: player.registration,
+          availableTables: nextAvailableTables
+        });
+      }
+
+      if (isValid && solvePlayerTableAssignments(updatedPlayers, round, capacities, assignments)) {
+        return true;
+      }
+
+      capacities[tableNumber] += 1;
+      delete assignments[nextPlayer.registration.id];
+    }
+
+    return false;
+  }
+
+  function buildRound2Assignments() {
+    var capacities = buildTableCapacities(tournamentRegistrations.length);
+    var players = shuffle(tournamentRegistrations).map(function (registration) {
+      return {
+        registration: registration,
+        availableTables: getAvailableTablesForRegistration(registration.id, 2, capacities)
+      };
+    });
+    var resolvedAssignments = {};
+
+    if (!solvePlayerTableAssignments(players, 2, capacities, resolvedAssignments)) {
+      return null;
+    }
+
+    return resolvedAssignments;
+  }
+
+  function getAllowedTablesForGroup(group, round, tableCount) {
+    var allowed = [];
+
+    for (var tableNumber = 1; tableNumber <= tableCount; tableNumber += 1) {
+      var allAllowed = group.every(function (item) {
+        return !hasPlayedTableBeforeRound(item.registration.id, round, tableNumber);
+      });
+
+      if (allAllowed) {
+        allowed.push(tableNumber);
+      }
+    }
+
+    return allowed;
+  }
+
+  function solveGroupTableAssignments(groups, tableNumbers, assignments) {
+    if (groups.length === 0) {
+      return true;
+    }
+
+    var rankedGroups = groups.slice().sort(function (a, b) {
+      return a.allowedTables.length - b.allowedTables.length;
+    });
+    var nextGroup = rankedGroups[0];
+    var remainingGroups = rankedGroups.slice(1);
+    var candidateTables = shuffle(nextGroup.allowedTables).filter(function (tableNumber) {
+      return tableNumbers.indexOf(tableNumber) !== -1;
+    });
+
+    for (var i = 0; i < candidateTables.length; i += 1) {
+      var tableNumber = candidateTables[i];
+      assignments[nextGroup.groupIndex] = tableNumber;
+
+      var remainingTableNumbers = tableNumbers.filter(function (candidate) {
+        return candidate !== tableNumber;
+      });
+      var updatedGroups = [];
+      var isValid = true;
+
+      for (var j = 0; j < remainingGroups.length; j += 1) {
+        var group = remainingGroups[j];
+        var nextAllowedTables = group.allowedTables.filter(function (candidate) {
+          return candidate !== tableNumber;
+        });
+
+        if (!nextAllowedTables.length) {
+          isValid = false;
+          break;
+        }
+
+        updatedGroups.push({
+          groupIndex: group.groupIndex,
+          players: group.players,
+          allowedTables: nextAllowedTables
+        });
+      }
+
+      if (isValid && solveGroupTableAssignments(updatedGroups, remainingTableNumbers, assignments)) {
+        return true;
+      }
+
+      delete assignments[nextGroup.groupIndex];
+    }
+
+    return false;
+  }
+
+  function buildRound3Assignments(ordered) {
+    var tableCount = getTableCount(ordered.length);
+    var tableNumbers = [];
+    var groups = [];
+
+    for (var tableNumber = 1; tableNumber <= tableCount; tableNumber += 1) {
+      tableNumbers.push(tableNumber);
+    }
+
+    for (var index = 0; index < ordered.length; index += PLAYERS_PER_TABLE) {
+      var players = ordered.slice(index, index + PLAYERS_PER_TABLE);
+      groups.push({
+        groupIndex: groups.length,
+        players: players,
+        allowedTables: getAllowedTablesForGroup(players, 3, tableCount)
+      });
+    }
+
+    var groupAssignments = {};
+    if (!solveGroupTableAssignments(groups, tableNumbers, groupAssignments)) {
+      return null;
+    }
+
+    var resolvedAssignments = {};
+    groups.forEach(function (group) {
+      var assignedTable = groupAssignments[group.groupIndex];
+      group.players.forEach(function (item) {
+        resolvedAssignments[item.registration.id] = assignedTable;
+      });
+    });
+
+    return resolvedAssignments;
+  }
+
+  function buildSequentialAssignments(ordered) {
+    var resolvedAssignments = {};
+
+    ordered.forEach(function (item, index) {
+      resolvedAssignments[item.registration.id] = Math.floor(index / PLAYERS_PER_TABLE) + 1;
+    });
+
+    return resolvedAssignments;
+  }
+
   function generateRandomRound2() {
     if (!selectedTournament) {
       setStatus('Odaberi turnir prije nasumičnog rasporeda.', true);
@@ -499,15 +884,53 @@
       return;
     }
 
+    var round2Assignments = buildRound2Assignments();
+    if (!round2Assignments) {
+      setStatus('Ne mogu generirati rundu 2 bez ponavljanja stola po igraču. Provjeri raspored prve runde.', true);
+      return;
+    }
+
     assignmentsByRound[2] = {};
-    shuffle(tournamentRegistrations).forEach(function (registration, index) {
-      var tableNumber = Math.floor(index / PLAYERS_PER_TABLE) + 1;
+    tournamentRegistrations.forEach(function (registration) {
+      var tableNumber = round2Assignments[registration.id];
       setAssignmentValue(2, registration, String(tableNumber));
     });
 
     renderRoundTable(2);
     renderSummary(2);
-    setStatus('Nasumični raspored za rundu 2 je generiran. Po potrebi ga ručno prilagodi i spremi.', false);
+    setStatus('Nasumični raspored za rundu 2 je generiran bez ponavljanja stola po igraču. Po potrebi ga ručno prilagodi i spremi.', false);
+  }
+
+  function generateRandomRound1() {
+    if (!isStagingProject()) {
+      setStatus('Random raspored za rundu 1 dostupan je samo na stagingu.', true);
+      return;
+    }
+
+    if (!selectedTournament) {
+      setStatus('Odaberi turnir prije random rasporeda.', true);
+      return;
+    }
+
+    if (!tournamentRegistrations.length) {
+      setStatus('Nema prijavljenih igrača za rasporediti.', true);
+      return;
+    }
+
+    var ordered = shuffle(tournamentRegistrations).map(function (registration) {
+      return { registration: registration };
+    });
+    var resolvedAssignments = buildSequentialAssignments(ordered);
+
+    assignmentsByRound[1] = {};
+    tournamentRegistrations.forEach(function (registration) {
+      var tableNumber = resolvedAssignments[registration.id];
+      setAssignmentValue(1, registration, String(tableNumber));
+    });
+
+    renderRoundTable(1);
+    renderSummary(1);
+    setStatus('Random raspored za rundu 1 je generiran. Po potrebi ga ručno prilagodi i spremi.', false);
   }
 
   function compareByTieBreak(a, b) {
@@ -595,16 +1018,40 @@
       });
 
       var ordered = buildRound3OrderFromScores(roundScores);
+      var round3Assignments = buildRound3Assignments(ordered);
+      if (!round3Assignments) {
+        var fallbackAssignments = buildSequentialAssignments(ordered);
+        var fallbackAssignmentData = {};
+
+        ordered.forEach(function (item) {
+          fallbackAssignmentData[item.registration.id] = {
+            tableNumber: fallbackAssignments[item.registration.id]
+          };
+        });
+
+        var fallbackWarnings = getRoundConflictWarnings(3, fallbackAssignmentData);
+        var confirmedConflict = window.confirm(buildConflictConfirmationMessage(3, fallbackWarnings, 'prihvatiti konflikt i generirati ovaj raspored'));
+        if (!confirmedConflict) {
+          setStatus('Generiranje runde 3 je otkazano jer raspored bez konflikta nije pronađen.', true);
+          return;
+        }
+
+        round3Assignments = fallbackAssignments;
+      }
+
       assignmentsByRound[3] = {};
 
-      ordered.forEach(function (item, index) {
-        var tableNumber = Math.floor(index / PLAYERS_PER_TABLE) + 1;
-        setAssignmentValue(3, item.registration, String(tableNumber));
+      ordered.forEach(function (item) {
+        setAssignmentValue(3, item.registration, String(round3Assignments[item.registration.id]));
       });
 
       renderRoundTable(3);
       renderSummary(3);
-      setStatus('Runda 3 je raspoređena prema trenutnom poretku nakon prve dvije runde.', false);
+      if (getRoundConflictWarnings(3).length) {
+        setStatus('Runda 3 je raspoređena prema trenutnom poretku uz prihvaćen konflikt u rasporedu.', false);
+      } else {
+        setStatus('Runda 3 je raspoređena prema trenutnom poretku bez ponavljanja stola po igraču.', false);
+      }
     } catch (error) {
       console.error(error);
       setStatus('Automatski raspored za rundu 3 nije uspio.', true);
@@ -790,6 +1237,11 @@
     registrationsCollection = db.collection('registrations');
     tableAssignmentsCollection = db.collection('adminTableAssignments');
     roundScoresCollection = db.collection('adminRoundScores');
+
+    if (roundViews[1].randomBtn) {
+      roundViews[1].randomBtn.hidden = !isStagingProject();
+    }
+
     return true;
   }
 
@@ -826,6 +1278,7 @@
         clearInterval(timer);
         initTabs();
         loadTournaments();
+        loadShowPublicSetting();
         return;
       }
 
@@ -835,6 +1288,43 @@
         setStatus('Firebase se nije učitao. Osvježi stranicu.', true);
       }
     }, FIREBASE_WAIT_MS);
+  }
+
+  var showPublicToggle = document.getElementById('showPublicToggle');
+  var showPublicStatusEl = document.getElementById('showPublicStatus');
+
+  function loadShowPublicSetting() {
+    if (!db || !showPublicToggle) return;
+    db.collection('adminSettings').doc('tableSchedule').get()
+      .then(function (docSnap) {
+        if (docSnap.exists) {
+          showPublicToggle.checked = docSnap.data().showPublicButton === true;
+        } else {
+          showPublicToggle.checked = false;
+        }
+      })
+      .catch(function (err) {
+        console.error('Greška čitanja postavke:', err);
+      });
+  }
+
+  if (showPublicToggle) {
+    showPublicToggle.addEventListener('change', function () {
+      if (!db) return;
+      var isOn = showPublicToggle.checked;
+      showPublicStatusEl.textContent = 'Spremanje...';
+      showPublicStatusEl.style.color = '';
+      db.collection('adminSettings').doc('tableSchedule').set({
+        showPublicButton: isOn
+      }).then(function () {
+        showPublicStatusEl.textContent = isOn ? 'Gumb je vidljiv igračima.' : 'Gumb je skriven igračima.';
+        showPublicStatusEl.style.color = '';
+      }).catch(function (err) {
+        showPublicStatusEl.textContent = 'Greška: ' + err.message;
+        showPublicStatusEl.style.color = '#ff6b6b';
+        showPublicToggle.checked = !isOn;
+      });
+    });
   }
 
   tournamentSelect.addEventListener('change', function () {
@@ -856,6 +1346,9 @@
     renderRoundTable(3);
   });
 
+  roundViews[1].randomBtn.addEventListener('click', function () {
+    generateRandomRound1();
+  });
   roundViews[1].saveBtn.addEventListener('click', function () {
     saveRound(1);
   });

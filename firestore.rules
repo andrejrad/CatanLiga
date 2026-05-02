@@ -61,8 +61,13 @@ service cloud.firestore {
         && request.resource.data.venueName.size() <= 120
         && request.resource.data.time is string
         && request.resource.data.time.size() == 5
-        && request.resource.data.round is int
-        && request.resource.data.round > 0
+        && (
+          (request.resource.data.round is int && request.resource.data.round > 0)
+          || (request.resource.data.round is string
+            && request.resource.data.round.size() > 0
+            && request.resource.data.round.size() <= 16
+            && request.resource.data.round.matches('^[1-9][0-9]*(\\.[a-zA-Z]+)?$'))
+        )
         && (!('registrationCloseHours' in request.resource.data)
           || (request.resource.data.registrationCloseHours is int
             && request.resource.data.registrationCloseHours >= 0
@@ -165,14 +170,19 @@ service cloud.firestore {
     match /adminSettings/{settingId} {
       allow read: if true;
 
-      allow create, update: if settingId == 'access'
+      allow create, update: if (settingId == 'access'
         && request.resource.data.keys().hasOnly([
           'password',
           'updatedAt'
         ])
         && request.resource.data.password is string
         && request.resource.data.password.size() >= 6
-        && request.resource.data.password.size() <= 120;
+        && request.resource.data.password.size() <= 120)
+        || (settingId == 'tableSchedule'
+        && request.resource.data.keys().hasOnly([
+          'showPublicButton'
+        ])
+        && request.resource.data.showPublicButton is bool);
 
       allow delete: if false;
     }

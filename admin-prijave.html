@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=83" />
+    <link rel="stylesheet" href="styles.css?v=84" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -25,80 +25,139 @@
     <div class="page-content">
       <p class="admin-note">Admin modul za pregled, dodavanje, uređivanje i brisanje prijava.</p>
 
-      <div class="page-cta-row page-cta-row-left" aria-label="Akcije prijava">
-        <button id="registrationsExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+      <div class="admin-tabs" role="tablist" aria-label="Sekcije prijava">
+        <button class="admin-tab-btn is-active" id="prijaveTabOverview" type="button" role="tab" aria-selected="true" aria-controls="prijavePanelOverview" data-tab-target="overview">Pregled</button>
+        <button class="admin-tab-btn" id="prijaveTabCreate" type="button" role="tab" aria-selected="false" aria-controls="prijavePanelCreate" data-tab-target="create">Prijavi Igrača</button>
+        <button class="admin-tab-btn" id="prijaveTabMail" type="button" role="tab" aria-selected="false" aria-controls="prijavePanelMail" data-tab-target="mail">Mailovi</button>
       </div>
 
-      <form id="registrationAdminForm" class="admin-form" novalidate>
-        <label class="form-field">
-          <span class="form-label">Ime</span>
-          <input id="registrationFirstName" name="firstName" type="text" autocomplete="given-name" required />
-        </label>
-
-        <label class="form-field">
-          <span class="form-label">Prezime</span>
-          <input id="registrationLastName" name="lastName" type="text" autocomplete="family-name" required />
-        </label>
-
-        <label class="form-field">
-          <span class="form-label">Email</span>
-          <input id="registrationEmail" name="email" type="email" autocomplete="email" required />
-        </label>
-
-        <label class="form-field">
-          <span class="form-label">Odabir turnira</span>
-          <select id="registrationTournament" name="tournament" required>
-            <option value="">Učitavanje aktivnih turnira...</option>
-          </select>
-        </label>
-
-        <label class="form-field">
-          <span class="form-label">Napomena</span>
-          <span class="field-note">Ako dolaziš s ekipom s kojom zelis igrati, navedi njihova puna imena - oni se također moraju prijaviti.</span>
-          <textarea id="registrationNote" name="note" rows="4" maxlength="600"></textarea>
-        </label>
-
-        <fieldset class="checkbox-group registration-consent">
-          <label>
-            <input id="registrationConsent" name="consent" type="checkbox" required />
-            Prihvaćam
-            <a class="contact-link" href="uvjeti-koristenja.html" target="_blank" rel="noopener">Pravila Korištenja</a>
-            i
-            <a class="contact-link" href="politika-privatnosti.html" target="_blank" rel="noopener">Politiku Privatnosti</a>.
+      <section class="admin-tab-panel is-active" id="prijavePanelOverview" role="tabpanel" aria-labelledby="prijaveTabOverview" data-tab-panel="overview">
+        <div class="partner-filters" aria-label="Filter prijava">
+          <label class="form-field">
+            <span class="form-label">Filtriraj po turniru</span>
+            <select id="registrationsFilterTournament">
+              <option value="">Svi turniri</option>
+            </select>
           </label>
-        </fieldset>
 
-        <div class="page-cta-row page-cta-row-left">
-          <button id="registrationSubmitBtn" class="page-cta-btn" type="submit">Dodaj prijavu</button>
-          <button id="registrationCancelEdit" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Odustani</button>
+          <label class="form-field">
+            <span class="form-label">Pretraži po imenu ili emailu</span>
+            <input id="registrationsSearch" type="text" placeholder="npr. Ivan ili email@domena.hr" />
+          </label>
         </div>
-      </form>
 
-      <div class="partner-filters" aria-label="Filter prijava">
-        <label class="form-field">
-          <span class="form-label">Filtriraj po turniru</span>
-          <select id="registrationsFilterTournament">
-            <option value="">Svi turniri</option>
-          </select>
-        </label>
+        <div class="page-cta-row page-cta-row-left" aria-label="Akcije prijava">
+          <button id="registrationsExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
+        </div>
 
-        <label class="form-field">
-          <span class="form-label">Pretraži po imenu ili emailu</span>
-          <input id="registrationsSearch" type="text" placeholder="npr. Ivan ili email@domena.hr" />
-        </label>
-      </div>
+        <p id="registrationsStatus" class="form-status" aria-live="polite"></p>
 
-      <p id="registrationsStatus" class="form-status" aria-live="polite"></p>
+        <div id="registrationsList" class="tournament-list" aria-live="polite">
+          <p class="admin-note">Učitavanje prijava...</p>
+        </div>
+      </section>
 
-      <div id="registrationsList" class="tournament-list" aria-live="polite">
-        <p class="admin-note">Učitavanje prijava...</p>
-      </div>
+      <section class="admin-tab-panel" id="prijavePanelCreate" role="tabpanel" aria-labelledby="prijaveTabCreate" data-tab-panel="create" hidden>
+        <form id="registrationAdminForm" class="admin-form" novalidate>
+          <label class="form-field">
+            <span class="form-label">Ime</span>
+            <input id="registrationFirstName" name="firstName" type="text" autocomplete="given-name" required />
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Prezime</span>
+            <input id="registrationLastName" name="lastName" type="text" autocomplete="family-name" required />
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Email</span>
+            <input id="registrationEmail" name="email" type="email" autocomplete="email" required />
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Odabir turnira</span>
+            <select id="registrationTournament" name="tournament" required>
+              <option value="">Učitavanje aktivnih turnira...</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Napomena</span>
+            <span class="field-note">Ako dolaziš s ekipom s kojom zelis igrati, navedi njihova puna imena - oni se također moraju prijaviti.</span>
+            <textarea id="registrationNote" name="note" rows="4" maxlength="600"></textarea>
+          </label>
+
+          <fieldset class="checkbox-group registration-consent">
+            <label>
+              <input id="registrationConsent" name="consent" type="checkbox" required />
+              Prihvaćam
+              <a class="contact-link" href="uvjeti-koristenja.html" target="_blank" rel="noopener">Pravila Korištenja</a>
+              i
+              <a class="contact-link" href="politika-privatnosti.html" target="_blank" rel="noopener">Politiku Privatnosti</a>.
+            </label>
+          </fieldset>
+
+          <div class="page-cta-row page-cta-row-left">
+            <button id="registrationSubmitBtn" class="page-cta-btn" type="submit">Dodaj prijavu</button>
+            <button id="registrationCancelEdit" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Odustani</button>
+          </div>
+
+          <p id="registrationFormStatus" class="form-status admin-form-status" aria-live="polite"></p>
+
+          <div class="page-cta-row page-cta-row-left">
+            <button id="resetStagingDataBtn" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Resetiraj podatke</button>
+          </div>
+          <p id="resetStagingDataStatus" class="form-status admin-form-status" aria-live="polite"></p>
+        </form>
+      </section>
+
+      <section class="admin-tab-panel" id="prijavePanelMail" role="tabpanel" aria-labelledby="prijaveTabMail" data-tab-panel="mail" hidden>
+        <section class="admin-form" aria-label="Bulk email">
+          <h2 class="about-heading"><strong>Bulk email</strong></h2>
+
+          <label class="form-field">
+            <span class="form-label">Kolo za slanje</span>
+            <select id="bulkEmailTournamentSelect">
+              <option value="">Odaberi turnir</option>
+            </select>
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Naslov maila</span>
+            <input id="bulkEmailSubject" type="text" maxlength="180" placeholder="npr. Obavijest za sljedeće kolo" />
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Tekst maila</span>
+            <textarea id="bulkEmailBody" rows="6" maxlength="5000" placeholder="Upiši poruku koja se šalje igračima..."></textarea>
+          </label>
+
+          <label class="form-field">
+            <span class="form-label">Admin lozinka (potvrda slanja)</span>
+            <div class="password-input-wrapper">
+              <input id="bulkEmailAdminPassword" type="password" autocomplete="current-password" />
+              <button type="button" class="password-toggle-btn" aria-label="Prikaži/sakrij lozinku" onclick="var i=document.getElementById('bulkEmailAdminPassword');i.type=i.type==='password'?'text':'password';this.textContent=i.type==='password'?'👁':'🙈'">👁</button>
+            </div>
+          </label>
+
+          <div class="page-cta-row page-cta-row-left" aria-label="Akcije bulk maila">
+            <button id="bulkEmailTournamentBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Pošalji za odabrano kolo</button>
+            <button id="bulkEmailAllBtn" class="page-cta-btn" type="button">Pošalji svim igračima</button>
+          </div>
+
+          <p id="bulkEmailStatus" class="form-status" aria-live="polite"></p>
+        </section>
+      </section>
     </div>
 
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
-    <script defer src="admin-auth.js?v=1"></script>
-    <script defer src="admin-prijave.js?v=5"></script>
+    <script defer src="admin-env-config.js?v=1"></script>
+    <script defer src="admin-auth.js?v=3"></script>
+    <script defer src="admin-prijave.js?v=10"></script>
   </body>
 </html>
+
+
+

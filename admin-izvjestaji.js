@@ -100,6 +100,80 @@
     return email || 'Nepoznati igra\u010d';
   }
 
+  function getRegistrationCreatedAtMsByEmail(email) {
+    var reg = allRegistrations.find(function (r) {
+      return normalize(r.email) === email;
+    });
+
+    if (!reg || !reg.createdAt) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    var createdAt = reg.createdAt;
+    if (typeof createdAt.toDate === 'function') {
+      var dt = createdAt.toDate();
+      var ts = dt && typeof dt.getTime === 'function' ? dt.getTime() : NaN;
+      return Number.isFinite(ts) ? ts : Number.MAX_SAFE_INTEGER;
+    }
+
+    var parsed = new Date(createdAt).getTime();
+    return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+  }
+
+  function buildTournamentTieBreakContext(scores) {
+    var tableVpTotals = {};
+    var ratioSums = {};
+
+    scores.forEach(function (s) {
+      var email = getRegEmail(s);
+      var round = Number(s.round || 0);
+      var tableNumber = Number(s.tableNumber || 0);
+      if (!email || !round || !tableNumber || !Number.isInteger(s.vp)) {
+        return;
+      }
+
+      var tableKey = round + '__' + tableNumber;
+      tableVpTotals[tableKey] = (tableVpTotals[tableKey] || 0) + s.vp;
+    });
+
+    scores.forEach(function (s) {
+      var email = getRegEmail(s);
+      var round = Number(s.round || 0);
+      var tableNumber = Number(s.tableNumber || 0);
+      if (!email || !round || !tableNumber || !Number.isInteger(s.vp)) {
+        return;
+      }
+
+      var tableKey = round + '__' + tableNumber;
+      var tableTotal = Number(tableVpTotals[tableKey] || 0);
+      if (tableTotal <= 0) {
+        return;
+      }
+
+      var ratio = s.vp / tableTotal;
+      if (!ratioSums[email]) {
+        ratioSums[email] = {};
+      }
+      if (!ratioSums[email][round]) {
+        ratioSums[email][round] = { sum: 0, count: 0 };
+      }
+
+      ratioSums[email][round].sum += ratio;
+      ratioSums[email][round].count += 1;
+    });
+
+    var ratioAverages = {};
+    Object.keys(ratioSums).forEach(function (email) {
+      ratioAverages[email] = {};
+      [1, 2, 3].forEach(function (round) {
+        var cell = ratioSums[email][round];
+        ratioAverages[email][round] = cell && cell.count > 0 ? (cell.sum / cell.count) : null;
+      });
+    });
+
+    return ratioAverages;
+  }
+
   function createMsg(text) {
     var p = document.createElement('p');
     p.className = 'admin-note';
@@ -177,13 +251,24 @@
 
   function aggregateTournamentScores(scores) {
     var totals = {};
+    var tieBreakRatios = buildTournamentTieBreakContext(scores);
+
     scores.forEach(function (s) {
       var email = getRegEmail(s);
       if (!email) {
         return;
       }
       if (!totals[email]) {
-        totals[email] = { email: email, totalPoints: 0, wins: 0, totalVp: 0, lastPlace: null, lastRound: -1 };
+        totals[email] = {
+          email: email,
+          totalPoints: 0,
+          wins: 0,
+          totalVp: 0,
+          lastPlace: null,
+          lastRound: -1,
+          registrationCreatedAtMs: getRegistrationCreatedAtMsByEmail(email),
+          roundVpRatioByRound: tieBreakRatios[email] || { 1: null, 2: null, 3: null }
+        };
       }
       totals[email].totalPoints += computePoints(s);
       if (s.place === 1) {
@@ -213,7 +298,26 @@
       }
       var al = Number.isInteger(a.lastPlace) ? a.lastPlace : 9999;
       var bl = Number.isInteger(b.lastPlace) ? b.lastPlace : 9999;
-      return al - bl;
+      if (al !== bl) {
+        return al - bl;
+      }
+
+      var rounds = [3, 2, 1];
+      for (var i = 0; i < rounds.length; i += 1) {
+        var round = rounds[i];
+        var aRatio = typeof a.roundVpRatioByRound[round] === 'number' ? a.roundVpRatioByRound[round] : -1;
+        var bRatio = typeof b.roundVpRatioByRound[round] === 'number' ? b.roundVpRatioByRound[round] : -1;
+
+        if (aRatio !== bRatio) {
+          return bRatio - aRatio;
+        }
+      }
+
+      if (a.registrationCreatedAtMs !== b.registrationCreatedAtMs) {
+        return a.registrationCreatedAtMs - b.registrationCreatedAtMs;
+      }
+
+      return playerName(a.email).localeCompare(playerName(b.email), 'hr', { sensitivity: 'base' });
     });
   }
 
@@ -509,8 +613,8 @@
             return [i + 1, p.name, p.tournamentsPlayed, pct + '%'];
           }),
           '28rem'
-      addBackToTopButton(ligaActivityEl);
         ));
+        addBackToTopButton(ligaActivityEl);
       }
     }
 
@@ -526,8 +630,8 @@
             return [ts.label, ts.newPlayers, ts.cumulative];
           }),
           '38rem'
-      addBackToTopButton(ligaGrowthEl);
         ));
+        addBackToTopButton(ligaGrowthEl);
       }
     }
 
@@ -565,9 +669,9 @@
               vs.count > 0 ? (vs.totalScored / vs.count).toFixed(1) : '0'
             ];
           }),
-      addBackToTopButton(ligaVenueEl);
           '36rem'
         ));
+        addBackToTopButton(ligaVenueEl);
       }
     }
   }

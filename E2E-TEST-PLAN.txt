@@ -1,0 +1,105 @@
+Catan Liga Zagreb - E2E Test Plan (Production-safe)
+Created: 2026-05-01
+
+Purpose
+- Test end-to-end functionality safely on production data without impacting real users.
+
+Testing Strategy
+- Use isolated test data only.
+- Never use bulk send to all players during test runs.
+- Mark all test entities with a unique prefix.
+
+Recommended Test Prefix
+- E2E-2026-05-01
+
+1) Safe Setup (Production)
+[ ] Create test tournaments with visible test labels, for example rounds 2.a and 2.b
+[ ] Use only test player names/emails you control
+[ ] Add test marker in names/notes/subjects: E2E-2026-05-01
+[ ] Keep all test actions scoped to test tournaments
+
+2) Pre-test Checklist (5 minutes)
+[ ] Saving tournament with round label 2.a works
+[ ] Sorting order is correct: 2, 2.a, 2.b, 3
+[ ] Mail function works for one controlled test recipient
+[ ] Function logs are open and monitored during test
+
+3) End-to-End Flow
+3.1 Admin Turniri
+[ ] Create tournament 2.a
+[ ] Create tournament 2.b
+[ ] Edit one tournament and save
+[ ] Verify filtering by round works
+
+3.2 Public Prijava
+[ ] Register 3 test players to 2.a
+[ ] Confirm duplicate email for same tournament is blocked
+
+3.3 Admin Prijave
+[ ] In Pregled: filter by 2.a and test search
+[ ] In Prijavi Igraca: add one player manually
+[ ] Edit one registration and save
+[ ] Export CSV and verify data matches current filter
+
+3.4 Mailovi
+[ ] Send mail for selected tournament (2.a) with subject starting TEST
+[ ] Confirm test recipients received email
+[ ] Confirm wrong admin password fails correctly
+[ ] Do NOT click Send to all players
+
+3.5 Raspored Stolova
+[ ] Generate round 1 assignments
+[ ] Save assignments
+[ ] Export CSV and verify content
+
+3.6 Upis Bodova
+[ ] Enter round 1 scores and save
+[ ] Lock one table and verify editing is blocked
+[ ] Unlock and verify editing works again
+
+3.7 Ranking / Leaderboard
+[ ] Verify expected order after score entry
+[ ] Verify tournaments with 2.a/2.b render correctly
+
+3.8 Galerija
+[ ] Upload 1-2 test images for 2.a
+[ ] Verify public gallery filtering/display works
+
+4) Pass / Fail Criteria
+PASS if all are true:
+[ ] No Missing or insufficient permissions errors
+[ ] No blocking JS errors in browser console on core pages
+[ ] All CRUD actions complete without workaround
+[ ] Mail goes only to test recipients
+[ ] CSV export and filtered UI data are consistent
+
+5) Cleanup (Mandatory)
+[ ] Delete test registrations (prefix E2E-2026-05-01)
+[ ] Delete test tournaments (2.a / 2.b that were test-only)
+[ ] Delete test gallery images
+[ ] Delete test score records and table assignments linked to test tournaments
+[ ] Verify no test entities remain with prefix E2E-2026-05-01
+
+6) Recommended Execution Order
+- Turniri -> Prijava -> Prijave -> Mailovi -> Raspored Stolova -> Upis Bodova -> Ranking -> Galerija
+- If one phase fails, stop and fix before continuing.
+
+7) Notes Template (fill after each run)
+Run date:
+Tester:
+Environment: production
+
+What passed:
+-
+
+What failed:
+-
+
+Observed errors (exact message + where):
+-
+
+Actions taken:
+-
+
+Follow-ups:
+-

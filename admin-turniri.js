@@ -49,6 +49,52 @@
     submitButton.style.cursor = isSubmitting ? 'not-allowed' : 'pointer';
   }
 
+  function parseRoundLabel(value) {
+    var raw = String(value == null ? '' : value).trim();
+    var lower = raw.toLowerCase();
+    var match = lower.match(/^(\d+)(?:\.([a-z]+))?$/i);
+
+    if (!match) {
+      return {
+        isValid: false,
+        raw: raw,
+        normalized: lower,
+        major: Number.MAX_SAFE_INTEGER,
+        suffix: lower
+      };
+    }
+
+    var major = parseInt(match[1], 10);
+    var suffix = (match[2] || '').toLowerCase();
+
+    return {
+      isValid: major >= 1,
+      raw: raw,
+      normalized: String(major) + (suffix ? '.' + suffix : ''),
+      major: major,
+      suffix: suffix
+    };
+  }
+
+  function compareRoundLabels(a, b) {
+    var parsedA = parseRoundLabel(a);
+    var parsedB = parseRoundLabel(b);
+
+    if (parsedA.major !== parsedB.major) {
+      return parsedA.major - parsedB.major;
+    }
+
+    if (!!parsedA.suffix !== !!parsedB.suffix) {
+      return parsedA.suffix ? 1 : -1;
+    }
+
+    if (parsedA.suffix !== parsedB.suffix) {
+      return parsedA.suffix.localeCompare(parsedB.suffix, 'hr', { sensitivity: 'base', numeric: true });
+    }
+
+    return String(a == null ? '' : a).localeCompare(String(b == null ? '' : b), 'hr', { sensitivity: 'base', numeric: true });
+  }
+
   function resetEditMode() {
     editingTournamentId = null;
     activeInput.value = 'true';
@@ -228,7 +274,7 @@
     });
 
     rounds.sort(function (a, b) {
-      return Number(a) - Number(b);
+      return compareRoundLabels(a, b);
     });
     venues.sort(function (a, b) {
       return a.localeCompare(b, 'hr', { sensitivity: 'base' });
@@ -309,8 +355,8 @@
       if ((a.date || '') !== (b.date || '')) {
         return (a.date || '').localeCompare(b.date || '');
       }
-      if ((a.round || 0) !== (b.round || 0)) {
-        return (a.round || 0) - (b.round || 0);
+      if (String(a.round || '') !== String(b.round || '')) {
+        return compareRoundLabels(a.round, b.round);
       }
       if ((a.time || '') !== (b.time || '')) {
         return (a.time || '').localeCompare(b.time || '');
@@ -540,7 +586,8 @@
     var venueId = venueSelect.value;
     var venueOption = venueSelect.options[venueSelect.selectedIndex];
     var venueName = venueOption ? venueOption.dataset.name || venueOption.textContent : '';
-    var round = parseInt(roundInput.value, 10);
+    var parsedRound = parseRoundLabel(roundInput.value);
+    var round = parsedRound.normalized;
     var registrationCloseHours = parseInt(registrationCloseHoursInput.value, 10);
     var isActive = activeInput.value !== 'false';
     var isEditing = !!editingTournamentId;
@@ -565,8 +612,8 @@
       return;
     }
 
-    if (!round || round < 1) {
-      setStatus('Unesi ispravno kolo.', true);
+    if (!parsedRound.isValid) {
+      setStatus('Unesi ispravnu oznaku kola (npr. 2 ili 2.a).', true);
       return;
     }
 

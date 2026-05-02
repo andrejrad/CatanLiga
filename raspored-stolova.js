@@ -2,8 +2,6 @@
   var FIREBASE_WAIT_TRIES = 80;
   var FIREBASE_WAIT_MS = 125;
 
-  var tournamentSelect = document.getElementById('publicTableTournamentSelect');
-  var tableFilterSelect = document.getElementById('publicTableFilterSelect');
   var searchInput = document.getElementById('publicTableSearch');
   var statusEl = document.getElementById('publicTableStatus');
   var listEl = document.getElementById('publicTableList');
@@ -14,11 +12,9 @@
   var assignmentsCollection = null;
   var scoresCollection = null;
 
-  var allTournaments = [];
-  var selectedTournament = null;
   var allRows = [];
 
-  if (!tournamentSelect || !tableFilterSelect || !searchInput || !statusEl || !listEl) {
+  if (!searchInput || !statusEl || !listEl) {
     return;
   }
 
@@ -59,70 +55,14 @@
     }
 
     db = firebase.firestore();
-    tournamentsCollection = db.collection('adminTournaments');
     registrationsCollection = db.collection('registrations');
     assignmentsCollection = db.collection('adminTableAssignments');
     scoresCollection = db.collection('adminRoundScores');
     return true;
   }
 
-  function renderTournamentOptions() {
-    tournamentSelect.innerHTML = '';
-
-    var placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = allTournaments.length ? 'Odaberi turnir' : 'Trenutno nema turnira';
-    tournamentSelect.appendChild(placeholder);
-
-    allTournaments.forEach(function (item) {
-      var option = document.createElement('option');
-      option.value = item.id;
-      option.textContent = getTournamentLabel(item);
-      tournamentSelect.appendChild(option);
-    });
-
-    tournamentSelect.disabled = !allTournaments.length;
-  }
-
-  function renderTableFilterOptions(rows) {
-    tableFilterSelect.innerHTML = '';
-
-    var defaultOption = document.createElement('option');
-    defaultOption.value = '';
-    defaultOption.textContent = 'Svi nezaključani stolovi';
-    tableFilterSelect.appendChild(defaultOption);
-
-    var seen = {};
-    var tableNumbers = [];
-
-    rows.forEach(function (row) {
-      var tableNumber = Number(row.tableNumber || 0);
-      if (!tableNumber || seen[tableNumber]) {
-        return;
-      }
-      seen[tableNumber] = true;
-      tableNumbers.push(tableNumber);
-    });
-
-    tableNumbers.sort(function (a, b) { return a - b; });
-
-    tableNumbers.forEach(function (tableNumber) {
-      var option = document.createElement('option');
-      option.value = String(tableNumber);
-      option.textContent = 'Stol ' + tableNumber;
-      tableFilterSelect.appendChild(option);
-    });
-
-    tableFilterSelect.disabled = !rows.length;
-  }
-
   function renderRows(rows) {
     listEl.innerHTML = '';
-
-    if (!selectedTournament) {
-      listEl.appendChild(createMessage('Odaberi turnir za prikaz rasporeda.'));
-      return;
-    }
 
     if (!rows.length) {
       listEl.appendChild(createMessage('Nema pristiglih igrača za nezaključane stolove.'));
@@ -137,7 +77,7 @@
 
     var thead = document.createElement('thead');
     var headRow = document.createElement('tr');
-    ['Prezime', 'Ime', 'Stol'].forEach(function (label) {
+    ['Prezime', 'Ime', 'Runda', 'Stol'].forEach(function (label) {
       var th = document.createElement('th');
       th.textContent = label;
       headRow.appendChild(th);
@@ -154,11 +94,15 @@
       var firstNameTd = document.createElement('td');
       firstNameTd.textContent = item.firstName || '';
 
+      var roundTd = document.createElement('td');
+      roundTd.textContent = String(item.round || '');
+
       var tableTd = document.createElement('td');
       tableTd.textContent = String(item.tableNumber || '');
 
       row.appendChild(lastNameTd);
       row.appendChild(firstNameTd);
+      row.appendChild(roundTd);
       row.appendChild(tableTd);
       tbody.appendChild(row);
     });
@@ -170,19 +114,12 @@
   }
 
   function applyFiltersAndRender() {
-    var tableFilter = tableFilterSelect.value;
     var search = normalize(searchInput.value);
 
     var filtered = allRows.filter(function (row) {
-      var tableOk = !tableFilter || String(row.tableNumber) === tableFilter;
-      if (!tableOk) {
-        return false;
-      }
-
       if (!search) {
         return true;
       }
-
       var fullName = normalize((row.firstName || '') + ' ' + (row.lastName || ''));
       var reverseName = normalize((row.lastName || '') + ' ' + (row.firstName || ''));
       return fullName.indexOf(search) !== -1 || reverseName.indexOf(search) !== -1;
@@ -191,36 +128,54 @@
     renderRows(filtered);
   }
 
-  function getUnlockedTablesMap(assignments, scoreDocs) {
+  function getUnlockedTableKeysMap(assignments, scoreDocs) {
     var assignedByTable = {};
     assignments.forEach(function (item) {
       var tableNumber = Number(item.tableNumber || 0);
       if (!tableNumber) {
         return;
       }
-      if (!assignedByTable[tableNumber]) {
-        assignedByTable[tableNumber] = [];
+
+      var tournamentId = item.tournamentId || '';
+      var round = Number(item.round || 0);
+      if (!tournamentId || !round) {
+        return;
       }
-      assignedByTable[tableNumber].push(item.registrationId);
+
+      var tableKey = tournamentId + '__r' + round + '__t' + tableNumber;
+      if (!assignedByTable[tableKey]) {
+        assignedByTable[tableKey] = {
+          round: round,
+          regIds: []
+        };
+      }
+      assignedByTable[tableKey].regIds.push(item.registrationId);
     });
 
-    var lockedByReg = {};
+    var lockedByRegRound = {};
     scoreDocs.forEach(function (item) {
       if (!item || !item.registrationId) {
         return;
       }
-      lockedByReg[item.registrationId] = !!item.locked;
+
+      var round = Number(item.round || 0);
+      if (!round) {
+        return;
+      }
+
+      lockedByRegRound[item.registrationId + '__r' + round] = !!item.locked;
     });
 
     var unlockedTables = {};
     Object.keys(assignedByTable).forEach(function (tableKey) {
-      var regIds = assignedByTable[tableKey];
+      var regIds = assignedByTable[tableKey].regIds;
+      var round = assignedByTable[tableKey].round;
       if (!regIds.length) {
         return;
       }
 
       var allLocked = regIds.every(function (registrationId) {
-        return lockedByReg[registrationId] === true;
+        return lockedByRegRound[registrationId + '__r' + round] === true;
       });
 
       if (!allLocked) {
@@ -231,29 +186,16 @@
     return unlockedTables;
   }
 
-  async function loadTournamentData(tournamentId) {
-    selectedTournament = allTournaments.find(function (item) {
-      return item.id === tournamentId;
-    }) || null;
-
+  async function loadAllUnlockedTables() {
     allRows = [];
     renderRows([]);
-    tableFilterSelect.innerHTML = '<option value="">Svi nezaključani stolovi</option>';
-    tableFilterSelect.disabled = true;
-    searchInput.value = '';
-    searchInput.disabled = true;
-
-    if (!selectedTournament) {
-      return;
-    }
-
     setStatus('Učitavanje rasporeda stolova...', false);
 
     try {
       var results = await Promise.all([
-        registrationsCollection.where('tournamentId', '==', tournamentId).where('attended', '==', true).get(),
-        assignmentsCollection.where('tournamentId', '==', tournamentId).where('round', '==', 1).get(),
-        scoresCollection.where('tournamentId', '==', tournamentId).where('round', '==', 1).get()
+        registrationsCollection.where('attended', '==', true).get(),
+        assignmentsCollection.get(),
+        scoresCollection.get()
       ]);
 
       var registrationsById = {};
@@ -266,6 +208,8 @@
         var data = doc.data() || {};
         assignments.push({
           registrationId: data.registrationId,
+          tournamentId: data.tournamentId,
+          round: Number(data.round || 0),
           tableNumber: data.tableNumber
         });
       });
@@ -275,22 +219,32 @@
         scoreDocs.push(doc.data() || {});
       });
 
-      var unlockedTables = getUnlockedTablesMap(assignments, scoreDocs);
+      var unlockedTables = getUnlockedTableKeysMap(assignments, scoreDocs);
 
       allRows = assignments
         .filter(function (item) {
           var tableNumber = Number(item.tableNumber || 0);
-          return tableNumber && unlockedTables[String(tableNumber)] && registrationsById[item.registrationId];
+          var tournamentId = item.tournamentId || '';
+          var round = Number(item.round || 0);
+          var tableKey = tournamentId + '__r' + round + '__t' + tableNumber;
+          return tableNumber && round && tournamentId && unlockedTables[tableKey] && registrationsById[item.registrationId];
         })
         .map(function (item) {
           var reg = registrationsById[item.registrationId] || {};
           return {
             firstName: reg.firstName || '',
             lastName: reg.lastName || '',
+            round: Number(item.round || 0),
             tableNumber: Number(item.tableNumber || 0)
           };
         })
         .sort(function (a, b) {
+          if ((a.round || 0) !== (b.round || 0)) {
+            return (a.round || 0) - (b.round || 0);
+          }
+          if ((a.tableNumber || 0) !== (b.tableNumber || 0)) {
+            return (a.tableNumber || 0) - (b.tableNumber || 0);
+          }
           var byLast = (a.lastName || '').localeCompare((b.lastName || ''), 'hr', { sensitivity: 'base' });
           if (byLast !== 0) {
             return byLast;
@@ -298,56 +252,19 @@
           return (a.firstName || '').localeCompare((b.firstName || ''), 'hr', { sensitivity: 'base' });
         });
 
-      renderTableFilterOptions(allRows);
-      searchInput.disabled = !allRows.length;
       applyFiltersAndRender();
 
       if (!allRows.length) {
-        setStatus('Za odabrani turnir nema podataka za nezaključane stolove.', false);
+        setStatus('Nema podataka za nezaključane stolove.', false);
       } else {
-        setStatus('Prikazani su pristigli igrači po nezaključanim stolovima (runda 1).', false);
+        setStatus('Prikaz svih nezaključanih stolova (sve runde): ' + allRows.length + ' igrača.', false);
       }
     } catch (error) {
       console.error(error);
-      setStatus('Ne mogu učitati raspored stolova za odabrani turnir.', true);
+      setStatus('Ne mogu učitati raspored stolova.', true);
       listEl.innerHTML = '';
       listEl.appendChild(createMessage('Ne mogu učitati podatke.'));
     }
-  }
-
-  function loadTournaments() {
-    tournamentsCollection.orderBy('date', 'asc').get().then(function (snapshot) {
-      var list = [];
-
-      snapshot.forEach(function (doc) {
-        var data = doc.data() || {};
-        if (!data.date || !data.time || data.active === false) {
-          return;
-        }
-        data.id = doc.id;
-        list.push(data);
-      });
-
-      list.sort(function (a, b) {
-        var aDate = new Date(a.date + 'T' + a.time);
-        var bDate = new Date(b.date + 'T' + b.time);
-        return aDate - bDate;
-      });
-
-      allTournaments = list;
-      renderTournamentOptions();
-
-      if (!allTournaments.length) {
-        setStatus('Trenutno nema aktivnih turnira.', true);
-      } else {
-        setStatus('', false);
-      }
-    }).catch(function (error) {
-      console.error(error);
-      tournamentSelect.innerHTML = '<option value="">Ne mogu učitati turnire</option>';
-      tournamentSelect.disabled = true;
-      setStatus('Dohvat turnira nije uspio.', true);
-    });
   }
 
   function waitForFirebaseAndInit() {
@@ -358,7 +275,7 @@
 
       if (initFirebaseConnections()) {
         clearInterval(timer);
-        loadTournaments();
+        loadAllUnlockedTables();
         return;
       }
 
@@ -369,11 +286,6 @@
     }, FIREBASE_WAIT_MS);
   }
 
-  tournamentSelect.addEventListener('change', function () {
-    loadTournamentData(tournamentSelect.value);
-  });
-
-  tableFilterSelect.addEventListener('change', applyFiltersAndRender);
   searchInput.addEventListener('input', applyFiltersAndRender);
 
   waitForFirebaseAndInit();

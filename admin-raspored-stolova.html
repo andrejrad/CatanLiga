@@ -12,7 +12,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=86" />
+    <link rel="stylesheet" href="styles.css?v=87" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -43,6 +43,7 @@
 
         <article class="bodovanje-panel is-active" id="panel-runda-1" role="tabpanel" aria-labelledby="tab-runda-1">
           <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 1">
+            <button id="round1RandomBtn" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Random raspored</button>
             <button id="round1SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 1</button>
             <button id="round1ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
           </div>
@@ -113,6 +114,17 @@
       <div class="page-cta-row page-cta-row-center" style="margin-top: 2rem;">
         <button id="showTablesBtn" class="page-cta-btn page-cta-btn-large" type="button">Prikaži stolove</button>
       </div>
+
+      <div class="page-cta-row page-cta-row-center" style="margin-top: 1.5rem;">
+        <div class="toggle-switch-row">
+          <span class="toggle-switch-label">Prikaži raspored stolova igračima</span>
+          <label class="toggle-switch" aria-label="Prikaži raspored stolova igračima">
+            <input type="checkbox" id="showPublicToggle" />
+            <span class="toggle-slider"></span>
+          </label>
+        </div>
+        <p id="showPublicStatus" class="form-status" aria-live="polite" style="margin-top: 0.6rem;"></p>
+      </div>
     </div>
 
     <div id="tablesDisplayOverlay" class="tables-overlay" hidden>
@@ -132,7 +144,11 @@
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
-    <script defer src="admin-auth.js?v=1"></script>
-    <script defer src="admin-raspored-stolova.js?v=5"></script>
+    <script defer src="admin-env-config.js?v=1"></script>
+    <script defer src="admin-auth.js?v=3"></script>
+    <script defer src="admin-raspored-stolova.js?v=6"></script>
   </body>
 </html>
+
+
+

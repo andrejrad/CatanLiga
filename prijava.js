@@ -2,6 +2,28 @@
   var FIREBASE_WAIT_TRIES = 80;
   var FIREBASE_WAIT_MS = 125;
 
+  function resolveProjectId() {
+    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+      var app = firebase.apps[0];
+      if (app && app.options && typeof app.options.projectId === 'string' && app.options.projectId.trim()) {
+        return app.options.projectId.trim();
+      }
+    }
+
+    if (window.location && typeof window.location.hostname === 'string') {
+      if (window.location.hostname.indexOf('catan-liga-staging') !== -1) {
+        return 'catan-liga-staging';
+      }
+    }
+
+    return 'catan-liga';
+  }
+
+  function getMailFunctionBaseUrl() {
+    var projectId = resolveProjectId();
+    return 'https://us-central1-' + projectId + '.cloudfunctions.net';
+  }
+
   var form = document.getElementById('registrationForm');
   var firstNameInput = document.getElementById('registrationFirstName');
   var lastNameInput = document.getElementById('registrationLastName');
@@ -49,6 +71,25 @@
 
   function normalize(value) {
     return (value || '').trim();
+  }
+
+  async function sendRegistrationConfirmationMail(payload) {
+    try {
+      var response = await fetch(getMailFunctionBaseUrl() + '/sendRegistrationConfirmation', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (!response.ok) {
+        var text = await response.text();
+        console.warn('Potvrda prijave nije poslana:', text);
+      }
+    } catch (error) {
+      console.warn('Poziv potvrde prijave nije uspio:', error);
+    }
   }
 
   function checkTournamentCapacity() {
@@ -324,6 +365,13 @@
         note: note,
         consentAccepted: true,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
+      });
+
+      sendRegistrationConfirmationMail({
+        firstName: firstName,
+        lastName: lastName,
+        email: email,
+        tournamentLabel: tournamentLabel
       });
 
       form.reset();

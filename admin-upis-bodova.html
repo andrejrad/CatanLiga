@@ -45,6 +45,7 @@
 
         <article class="bodovanje-panel is-active" id="panel-score-r1" role="tabpanel" aria-labelledby="tab-score-r1">
           <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 1">
+            <button id="scoreRound1RandomBtn" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Random bodovi</button>
             <button id="scoreRound1SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 1</button>
             <button id="scoreRound1ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
           </div>
@@ -75,6 +76,7 @@
 
         <article class="bodovanje-panel" id="panel-score-r2" role="tabpanel" aria-labelledby="tab-score-r2" hidden>
           <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 2">
+            <button id="scoreRound2RandomBtn" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Random bodovi</button>
             <button id="scoreRound2SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 2</button>
             <button id="scoreRound2ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
           </div>
@@ -105,6 +107,7 @@
 
         <article class="bodovanje-panel" id="panel-score-r3" role="tabpanel" aria-labelledby="tab-score-r3" hidden>
           <div class="page-cta-row page-cta-row-left" aria-label="Akcije runde 3">
+            <button id="scoreRound3RandomBtn" class="page-cta-btn page-cta-btn-secondary" type="button" hidden>Random bodovi</button>
             <button id="scoreRound3SaveBtn" class="page-cta-btn" type="button">Spremi Rundu 3</button>
             <button id="scoreRound3ExportBtn" class="page-cta-btn page-cta-btn-secondary" type="button">Export CSV</button>
           </div>
@@ -138,7 +141,11 @@
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
-    <script defer src="admin-auth.js?v=1"></script>
-    <script defer src="admin-upis-bodova.js?v=5"></script>
+    <script defer src="admin-env-config.js?v=1"></script>
+    <script defer src="admin-auth.js?v=3"></script>
+    <script defer src="admin-upis-bodova.js?v=6"></script>
   </body>
 </html>
+
+
+

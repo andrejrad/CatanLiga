@@ -115,6 +115,75 @@
     return score.playerName || 'Nepoznati igrač';
   }
 
+  function getRegistrationCreatedAtMs(registration) {
+    if (!registration || !registration.createdAt) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    var createdAt = registration.createdAt;
+    if (typeof createdAt.toDate === 'function') {
+      var dt = createdAt.toDate();
+      var ts = dt && typeof dt.getTime === 'function' ? dt.getTime() : NaN;
+      return Number.isFinite(ts) ? ts : Number.MAX_SAFE_INTEGER;
+    }
+
+    var parsed = new Date(createdAt).getTime();
+    return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+  }
+
+  function buildTournamentTieBreakContext(scoresForTournament) {
+    var tableVpTotals = {};
+    var ratioSums = {};
+
+    scoresForTournament.forEach(function (score) {
+      var round = Number(score.round || 0);
+      var tableNumber = Number(score.tableNumber || 0);
+      if (!round || !tableNumber || !Number.isInteger(score.vp)) {
+        return;
+      }
+
+      var tableKey = round + '__' + tableNumber;
+      tableVpTotals[tableKey] = (tableVpTotals[tableKey] || 0) + score.vp;
+    });
+
+    scoresForTournament.forEach(function (score) {
+      var round = Number(score.round || 0);
+      var tableNumber = Number(score.tableNumber || 0);
+      if (!round || !tableNumber || !Number.isInteger(score.vp)) {
+        return;
+      }
+
+      var key = getScorePlayerKey(score);
+      var tableKey = round + '__' + tableNumber;
+      var tableTotal = Number(tableVpTotals[tableKey] || 0);
+      if (tableTotal <= 0) {
+        return;
+      }
+
+      var ratio = score.vp / tableTotal;
+      if (!ratioSums[key]) {
+        ratioSums[key] = {};
+      }
+      if (!ratioSums[key][round]) {
+        ratioSums[key][round] = { sum: 0, count: 0 };
+      }
+
+      ratioSums[key][round].sum += ratio;
+      ratioSums[key][round].count += 1;
+    });
+
+    var ratioAverages = {};
+    Object.keys(ratioSums).forEach(function (key) {
+      ratioAverages[key] = {};
+      [1, 2, 3].forEach(function (round) {
+        var cell = ratioSums[key][round];
+        ratioAverages[key][round] = cell && cell.count > 0 ? (cell.sum / cell.count) : null;
+      });
+    });
+
+    return ratioAverages;
+  }
+
   function compareByTieBreak(a, b) {
     if (b.totalPoints !== a.totalPoints) {
       return b.totalPoints - a.totalPoints;
@@ -132,14 +201,31 @@
       return aLastPlace - bLastPlace;
     }
 
+    var rounds = [3, 2, 1];
+    for (var i = 0; i < rounds.length; i += 1) {
+      var round = rounds[i];
+      var aRatio = typeof a.roundVpRatioByRound[round] === 'number' ? a.roundVpRatioByRound[round] : -1;
+      var bRatio = typeof b.roundVpRatioByRound[round] === 'number' ? b.roundVpRatioByRound[round] : -1;
+
+      if (aRatio !== bRatio) {
+        return bRatio - aRatio;
+      }
+    }
+
+    if (a.registrationCreatedAtMs !== b.registrationCreatedAtMs) {
+      return a.registrationCreatedAtMs - b.registrationCreatedAtMs;
+    }
+
     return a.playerName.localeCompare(b.playerName, 'hr', { sensitivity: 'base' });
   }
 
   function aggregateTournament(scoresForTournament) {
     var totals = {};
+    var tieBreakRatios = buildTournamentTieBreakContext(scoresForTournament);
 
     scoresForTournament.forEach(function (score) {
       var key = getScorePlayerKey(score);
+      var registration = registrationsById[score.registrationId] || null;
       if (!totals[key]) {
         totals[key] = {
           key: key,
@@ -148,7 +234,9 @@
           wins: 0,
           totalVp: 0,
           lastPlace: null,
-          lastRound: -1
+          lastRound: -1,
+          registrationCreatedAtMs: getRegistrationCreatedAtMs(registration),
+          roundVpRatioByRound: tieBreakRatios[key] || { 1: null, 2: null, 3: null }
         };
       }
 

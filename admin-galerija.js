@@ -84,11 +84,39 @@
     return 'Kolo ' + (item.round || '') + ' | ' + termin.trim() + ' | ' + (item.venueName || '');
   }
 
+  function parseRoundLabel(value) {
+    var raw = String(value == null ? '' : value).trim();
+    var lower = raw.toLowerCase();
+    var match = lower.match(/^(\d+)(?:\.([a-z]+))?$/i);
+
+    if (!match) {
+      return {
+        major: Number.MAX_SAFE_INTEGER,
+        suffix: lower,
+        raw: lower
+      };
+    }
+
+    return {
+      major: parseInt(match[1], 10),
+      suffix: (match[2] || '').toLowerCase(),
+      raw: lower
+    };
+  }
+
   function compareTournaments(a, b) {
-    var roundA = Number(a.round || 0);
-    var roundB = Number(b.round || 0);
-    if (roundA !== roundB) {
-      return roundA - roundB;
+    var roundA = parseRoundLabel(a.round);
+    var roundB = parseRoundLabel(b.round);
+    if (roundA.major !== roundB.major) {
+      return roundA.major - roundB.major;
+    }
+
+    if (!!roundA.suffix !== !!roundB.suffix) {
+      return roundA.suffix ? 1 : -1;
+    }
+
+    if (roundA.suffix !== roundB.suffix) {
+      return roundA.suffix.localeCompare(roundB.suffix, 'hr', { sensitivity: 'base', numeric: true });
     }
 
     if ((a.date || '') !== (b.date || '')) {

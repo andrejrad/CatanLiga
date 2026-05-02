@@ -202,6 +202,22 @@
     });
   }
 
+  function loadTableScheduleVisibility(db) {
+    var btn = document.getElementById('rasporedStolovaBtn');
+    if (!btn) return;
+    db.collection('adminSettings').doc('tableSchedule').get()
+      .then(function (docSnap) {
+        if (docSnap.exists && docSnap.data().showPublicButton === true) {
+          btn.style.display = '';
+        } else {
+          btn.style.display = 'none';
+        }
+      })
+      .catch(function () {
+        btn.style.display = 'none';
+      });
+  }
+
   function waitForFirebaseAndLoad() {
     var tries = 0;
     var timer = setInterval(function () {
@@ -210,6 +226,7 @@
       if (window.firebase && firebase.apps && firebase.apps.length) {
         clearInterval(timer);
         loadLeaderboard(firebase.firestore());
+        loadTableScheduleVisibility(firebase.firestore());
         return;
       }
 

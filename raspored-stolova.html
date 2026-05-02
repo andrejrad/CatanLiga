@@ -18,7 +18,7 @@
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
-    <script defer src="raspored-stolova.js?v=1"></script>
+    <script defer src="raspored-stolova.js?v=2"></script>
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -32,33 +32,17 @@
 
     <h1 class="page-title page-title-flow">Raspored Stolova</h1>
     <div class="page-content">
-      <p class="admin-note">Odaberi turnir i provjeri popis pristiglih igrača po nezaključanim stolovima.</p>
-
       <div class="partner-filters" aria-label="Filter rasporeda stolova">
         <label class="form-field">
-          <span class="form-label">Turnir</span>
-          <select id="publicTableTournamentSelect">
-            <option value="">Učitavanje turnira...</option>
-          </select>
-        </label>
-
-        <label class="form-field">
-          <span class="form-label">Nezaključani stol</span>
-          <select id="publicTableFilterSelect" disabled>
-            <option value="">Svi nezaključani stolovi</option>
-          </select>
-        </label>
-
-        <label class="form-field">
           <span class="form-label">Pretraži ime i prezime</span>
-          <input id="publicTableSearch" type="text" placeholder="npr. Ivan Horvat" disabled />
+          <input id="publicTableSearch" type="text" placeholder="npr. Ivan Horvat" />
         </label>
       </div>
 
       <p id="publicTableStatus" class="form-status" aria-live="polite"></p>
 
       <div id="publicTableList" class="tournament-list" aria-live="polite">
-        <p class="admin-note">Odaberi turnir za prikaz rasporeda.</p>
+        <p class="admin-note">Učitavanje rasporeda...</p>
       </div>
     </div>
   </body>

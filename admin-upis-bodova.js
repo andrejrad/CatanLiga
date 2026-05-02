@@ -2,6 +2,27 @@
   var FIREBASE_WAIT_TRIES = 80;
   var FIREBASE_WAIT_MS = 125;
 
+  function resolveProjectId() {
+    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length > 0) {
+      var app = firebase.apps[0];
+      if (app && app.options && typeof app.options.projectId === 'string' && app.options.projectId.trim()) {
+        return app.options.projectId.trim();
+      }
+    }
+
+    if (window.location && typeof window.location.hostname === 'string') {
+      if (window.location.hostname.indexOf('catan-liga-staging') !== -1) {
+        return 'catan-liga-staging';
+      }
+    }
+
+    return 'catan-liga';
+  }
+
+  function isStagingProject() {
+    return resolveProjectId() === 'catan-liga-staging';
+  }
+
   var tournamentSelect = document.getElementById('scoreTournamentSelect');
   var statusEl = document.getElementById('scoreEntryStatus');
 
@@ -11,6 +32,7 @@
       tableStatusEl: document.getElementById('scoreRound1TableStatus'),
       saveBtn: document.getElementById('scoreRound1SaveBtn'),
       exportBtn: document.getElementById('scoreRound1ExportBtn'),
+      randomBtn: document.getElementById('scoreRound1RandomBtn'),
       tableFilterSelect: document.getElementById('scoreRound1TableFilter'),
       lockBtn: document.getElementById('scoreRound1LockTableBtn'),
       unlockBtn: document.getElementById('scoreRound1UnlockTableBtn'),
@@ -22,6 +44,7 @@
       tableStatusEl: document.getElementById('scoreRound2TableStatus'),
       saveBtn: document.getElementById('scoreRound2SaveBtn'),
       exportBtn: document.getElementById('scoreRound2ExportBtn'),
+      randomBtn: document.getElementById('scoreRound2RandomBtn'),
       tableFilterSelect: document.getElementById('scoreRound2TableFilter'),
       lockBtn: document.getElementById('scoreRound2LockTableBtn'),
       unlockBtn: document.getElementById('scoreRound2UnlockTableBtn'),
@@ -33,6 +56,7 @@
       tableStatusEl: document.getElementById('scoreRound3TableStatus'),
       saveBtn: document.getElementById('scoreRound3SaveBtn'),
       exportBtn: document.getElementById('scoreRound3ExportBtn'),
+      randomBtn: document.getElementById('scoreRound3RandomBtn'),
       tableFilterSelect: document.getElementById('scoreRound3TableFilter'),
       lockBtn: document.getElementById('scoreRound3LockTableBtn'),
       unlockBtn: document.getElementById('scoreRound3UnlockTableBtn'),
@@ -147,6 +171,9 @@
   function setRoundButtonsEnabled(round, isEnabled) {
     roundViews[round].saveBtn.disabled = !isEnabled;
     roundViews[round].exportBtn.disabled = !isEnabled;
+    if (roundViews[round].randomBtn) {
+      roundViews[round].randomBtn.disabled = !isEnabled || !isStagingProject();
+    }
     roundViews[round].tableFilterSelect.disabled = !isEnabled;
     roundViews[round].lockBtn.disabled = !isEnabled;
     if (roundViews[round].unlockBtn) {
@@ -383,6 +410,156 @@
 
   function round2(value) {
     return Number(Number(value).toFixed(2));
+  }
+
+  function randomInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1)) + min;
+  }
+
+  function shuffle(items) {
+    var copy = items.slice();
+    for (var i = copy.length - 1; i > 0; i -= 1) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var temp = copy[i];
+      copy[i] = copy[j];
+      copy[j] = temp;
+    }
+    return copy;
+  }
+
+  function buildVpByPlace(maxPlace) {
+    var byPlace = { 1: 10 };
+    if (maxPlace <= 1) {
+      return byPlace;
+    }
+
+    var second = randomInt(7, 9);
+    byPlace[2] = second;
+    if (maxPlace <= 2) {
+      return byPlace;
+    }
+
+    var thirdMax = Math.max(4, second - 1);
+    var third = randomInt(4, thirdMax);
+    byPlace[3] = third;
+    if (maxPlace <= 3) {
+      return byPlace;
+    }
+
+    var fourthMax = Math.max(3, third - 1);
+    byPlace[4] = randomInt(3, fourthMax);
+    return byPlace;
+  }
+
+  function applyRandomScores(round) {
+    if (!isStagingProject()) {
+      setStatus('Random bodovi su dostupni samo na stagingu.', true);
+      return;
+    }
+
+    if (!selectedTournament) {
+      setStatus('Odaberi turnir prije random bodova.', true);
+      return;
+    }
+
+    var rows = buildRoundRows(round);
+    if (!rows.length) {
+      setStatus('Runda ' + round + ' nema igrača za random bodove.', true);
+      return;
+    }
+
+    var rowsByTable = {};
+    rows.forEach(function (row) {
+      if (!rowsByTable[row.tableNumber]) {
+        rowsByTable[row.tableNumber] = [];
+      }
+      rowsByTable[row.tableNumber].push(row);
+    });
+
+    var filledPlaces = 0;
+    var filledVps = 0;
+    var skippedTables = [];
+
+    Object.keys(rowsByTable).forEach(function (key) {
+      var tableRows = rowsByTable[key];
+      var maxPlace = tableRows.length;
+      var usedPlaces = {};
+      var missingPlaceRows = [];
+
+      for (var i = 0; i < tableRows.length; i += 1) {
+        var row = tableRows[i];
+        if (row.locked) {
+          continue;
+        }
+
+        var value = scoreValuesByRound[round][row.registrationId] || {};
+        var place = value.place;
+
+        if (Number.isInteger(place) && place > 0 && place <= maxPlace) {
+          if (usedPlaces[place]) {
+            skippedTables.push(String(row.tableNumber));
+            return;
+          }
+          usedPlaces[place] = true;
+        } else {
+          missingPlaceRows.push(row);
+        }
+      }
+
+      var availablePlaces = [];
+      for (var placeCandidate = 1; placeCandidate <= maxPlace; placeCandidate += 1) {
+        if (!usedPlaces[placeCandidate]) {
+          availablePlaces.push(placeCandidate);
+        }
+      }
+
+      var shuffledRows = shuffle(missingPlaceRows);
+      for (var r = 0; r < shuffledRows.length; r += 1) {
+        var targetRow = shuffledRows[r];
+        var assignedPlace = availablePlaces[r];
+        if (!Number.isInteger(assignedPlace)) {
+          continue;
+        }
+
+        if (!scoreValuesByRound[round][targetRow.registrationId]) {
+          scoreValuesByRound[round][targetRow.registrationId] = { place: null, vp: null, locked: false, roundPoints: null };
+        }
+
+        if (!Number.isInteger(scoreValuesByRound[round][targetRow.registrationId].place)) {
+          scoreValuesByRound[round][targetRow.registrationId].place = assignedPlace;
+          filledPlaces += 1;
+        }
+      }
+
+      var vpByPlace = buildVpByPlace(maxPlace);
+      tableRows.forEach(function (rowForVp) {
+        if (rowForVp.locked) {
+          return;
+        }
+
+        var current = scoreValuesByRound[round][rowForVp.registrationId] || {};
+        var currentPlace = current.place;
+        if (!Number.isInteger(currentPlace) || currentPlace <= 0 || currentPlace > maxPlace) {
+          return;
+        }
+
+        if (!Number.isInteger(current.vp) || current.vp < 0) {
+          if (!scoreValuesByRound[round][rowForVp.registrationId]) {
+            scoreValuesByRound[round][rowForVp.registrationId] = { place: null, vp: null, locked: false, roundPoints: null };
+          }
+          scoreValuesByRound[round][rowForVp.registrationId].vp = vpByPlace[currentPlace];
+          filledVps += 1;
+        }
+      });
+    });
+
+    renderRoundTable(round);
+
+    var message = 'Runda ' + round + ': random dopunjeno mjesta=' + filledPlaces + ', VP=' + filledVps + '.';
+    if (skippedTables.length) {
+      message += ' Preskočeni stolovi zbog konflikta mjesta: ' + skippedTables.join(', ') + '.';
+    }
+    setStatus(message, false);
   }
 
   function calculateRoundPoints(place, vp) {
@@ -1065,6 +1242,13 @@
     roundScoresCollection = db.collection('adminRoundScores');
     scoreRulesCollection = db.collection('adminScoreRules');
     scoreConfigCollection = db.collection('adminScoreConfig');
+
+    [1, 2, 3].forEach(function (round) {
+      if (roundViews[round].randomBtn) {
+        roundViews[round].randomBtn.hidden = !isStagingProject();
+      }
+    });
+
     return true;
   }
 
@@ -1148,6 +1332,12 @@
   });
 
   [1, 2, 3].forEach(function (round) {
+    if (roundViews[round].randomBtn) {
+      roundViews[round].randomBtn.addEventListener('click', function () {
+        applyRandomScores(round);
+      });
+    }
+
     roundViews[round].saveBtn.addEventListener('click', function () {
       saveRound(round);
     });

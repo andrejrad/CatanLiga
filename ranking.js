@@ -73,7 +73,76 @@
     return base * 10 + round;
   }
 
-  function compareByTieBreak(a, b) {
+  function getRegistrationCreatedAtMs(registration) {
+    if (!registration || !registration.createdAt) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    var createdAt = registration.createdAt;
+    if (typeof createdAt.toDate === 'function') {
+      var dt = createdAt.toDate();
+      var ts = dt && typeof dt.getTime === 'function' ? dt.getTime() : NaN;
+      return Number.isFinite(ts) ? ts : Number.MAX_SAFE_INTEGER;
+    }
+
+    var parsed = new Date(createdAt).getTime();
+    return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
+  }
+
+  function buildTournamentTieBreakContext(scores) {
+    var tableVpTotals = {};
+    var ratioSums = {};
+
+    scores.forEach(function (score) {
+      var round = Number(score.round || 0);
+      var tableNumber = Number(score.tableNumber || 0);
+      if (!round || !tableNumber || !Number.isInteger(score.vp)) {
+        return;
+      }
+
+      var tableKey = round + '__' + tableNumber;
+      tableVpTotals[tableKey] = (tableVpTotals[tableKey] || 0) + score.vp;
+    });
+
+    scores.forEach(function (score) {
+      var round = Number(score.round || 0);
+      var tableNumber = Number(score.tableNumber || 0);
+      if (!round || !tableNumber || !Number.isInteger(score.vp)) {
+        return;
+      }
+
+      var key = getScorePlayerKey(score);
+      var tableKey = round + '__' + tableNumber;
+      var tableTotal = Number(tableVpTotals[tableKey] || 0);
+      if (tableTotal <= 0) {
+        return;
+      }
+
+      var ratio = score.vp / tableTotal;
+      if (!ratioSums[key]) {
+        ratioSums[key] = {};
+      }
+      if (!ratioSums[key][round]) {
+        ratioSums[key][round] = { sum: 0, count: 0 };
+      }
+
+      ratioSums[key][round].sum += ratio;
+      ratioSums[key][round].count += 1;
+    });
+
+    var ratioAverages = {};
+    Object.keys(ratioSums).forEach(function (key) {
+      ratioAverages[key] = {};
+      [1, 2, 3].forEach(function (round) {
+        var cell = ratioSums[key][round];
+        ratioAverages[key][round] = cell && cell.count > 0 ? (cell.sum / cell.count) : null;
+      });
+    });
+
+    return ratioAverages;
+  }
+
+  function compareByTieBreak(a, b, useExtendedRules) {
     if (b.totalPoints !== a.totalPoints) {
       return b.totalPoints - a.totalPoints;
     }
@@ -90,11 +159,45 @@
       return aLastPlace - bLastPlace;
     }
 
+    if (useExtendedRules) {
+      var rounds = [3, 2, 1];
+      for (var i = 0; i < rounds.length; i += 1) {
+        var round = rounds[i];
+        var aRatio = typeof a.roundVpRatioByRound[round] === 'number' ? a.roundVpRatioByRound[round] : -1;
+        var bRatio = typeof b.roundVpRatioByRound[round] === 'number' ? b.roundVpRatioByRound[round] : -1;
+
+        if (aRatio !== bRatio) {
+          return bRatio - aRatio;
+        }
+      }
+
+      if (a.registrationCreatedAtMs !== b.registrationCreatedAtMs) {
+        return a.registrationCreatedAtMs - b.registrationCreatedAtMs;
+      }
+    }
+
     return a.playerName.localeCompare(b.playerName, 'hr', { sensitivity: 'base' });
   }
 
   function aggregateScores(scores) {
     var totals = {};
+    var singleTournamentId = null;
+    var hasMultipleTournaments = false;
+
+    scores.forEach(function (score) {
+      var tid = score.tournamentId || '';
+      if (!tid) {
+        return;
+      }
+      if (singleTournamentId == null) {
+        singleTournamentId = tid;
+      } else if (singleTournamentId !== tid) {
+        hasMultipleTournaments = true;
+      }
+    });
+
+    var useExtendedRules = !!singleTournamentId && !hasMultipleTournaments;
+    var tieBreakRatios = useExtendedRules ? buildTournamentTieBreakContext(scores) : {};
 
     scores.forEach(function (score) {
       var registration = state.registrationsById[score.registrationId] || null;
@@ -108,7 +211,11 @@
           wins: 0,
           totalVp: 0,
           lastPlace: null,
-          lastOrder: -1
+          lastOrder: -1,
+          registrationCreatedAtMs: getRegistrationCreatedAtMs(registration),
+          roundVpRatioByRound: useExtendedRules && tieBreakRatios[key]
+            ? tieBreakRatios[key]
+            : { 1: null, 2: null, 3: null }
         };
       }
 
@@ -130,7 +237,9 @@
 
     return Object.keys(totals)
       .map(function (key) { return totals[key]; })
-      .sort(compareByTieBreak);
+      .sort(function (a, b) {
+        return compareByTieBreak(a, b, useExtendedRules);
+      });
   }
 
   function renderRankingTable(container, items) {
@@ -343,7 +452,7 @@
         data.id = doc.id;
         return data;
       }).filter(function (item) {
-        return item.active !== false && !!item.date && !!item.time;
+        return !!item.date && !!item.time;
       });
 
       state.tournamentOrderMap = {};
