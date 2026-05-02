@@ -1,3 +1,6 @@
 .DS_Store
 Thumbs.db
 desktop.ini
+.firebase/
+functions/node_modules/
+pglite-debug.log
