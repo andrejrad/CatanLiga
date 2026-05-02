@@ -60,6 +60,8 @@
   var registrationsCollection = null;
   var allRegistrations = [];
   var activeTournaments = [];
+  var allTournaments = [];
+  var tournamentsById = {};
   var editingRegistrationId = null;
 
   if (!form || !firstNameInput || !lastNameInput || !emailInput || !tournamentSelect || !noteInput || !consentInput || !submitButton || !cancelEditButton || !exportButton || !listEl || !statusEl || !formStatusEl || !filterTournamentSelect || !searchInput || !bulkTournamentSelect || !bulkSubjectInput || !bulkBodyInput || !bulkAdminPasswordInput || !bulkTournamentButton || !bulkAllButton || !bulkStatusEl) {
@@ -207,6 +209,30 @@
     return parts[2] + '.' + parts[1] + '.' + parts[0] + '.';
   }
 
+  function getTournamentLabel(item) {
+    if (!item) {
+      return 'Nepoznati turnir';
+    }
+
+    var round = item.round || '-';
+    var date = formatDate(item.date);
+    var time = item.time || '';
+    var venue = item.venueName || '';
+
+    return ('Kolo ' + round + ' - ' + date + ' ' + time + ' - ' + venue)
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  function getRegistrationTournamentLabel(item) {
+    var tournamentId = item && item.tournamentId ? item.tournamentId : '';
+    if (tournamentId && tournamentsById[tournamentId]) {
+      return getTournamentLabel(tournamentsById[tournamentId]);
+    }
+
+    return (item && item.tournamentLabel) || 'Nepoznati turnir';
+  }
+
   function resetEditMode() {
     editingRegistrationId = null;
     submitButton.textContent = 'Dodaj prijavu';
@@ -270,7 +296,7 @@
     activeTournaments.forEach(function (item) {
       var option = document.createElement('option');
       option.value = item.id;
-      option.textContent = 'Kolo ' + item.round + ' - ' + formatDate(item.date) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
+      option.textContent = getTournamentLabel(item);
       option.dataset.label = option.textContent;
       tournamentSelect.appendChild(option);
 
@@ -411,66 +437,95 @@
       .orderBy('date', 'asc')
       .get()
       .then(function (snapshot) {
-        var list = [];
+        var activeList = [];
+        var allList = [];
+        var byId = {};
 
         snapshot.forEach(function (doc) {
           var data = doc.data();
+          data.id = doc.id;
+          allList.push(data);
+          byId[data.id] = data;
+
           if (!data.date || !data.time) {
             return;
           }
 
-          data.id = doc.id;
-          list.push(data);
+          activeList.push(data);
         });
 
-        list.sort(function (a, b) {
+        activeList.sort(function (a, b) {
           var aDate = new Date(a.date + 'T' + a.time);
           var bDate = new Date(b.date + 'T' + b.time);
           return aDate - bDate;
         });
 
-        activeTournaments = list;
+        allList.sort(function (a, b) {
+          var aDate = new Date((a.date || '1970-01-01') + 'T' + (a.time || '00:00'));
+          var bDate = new Date((b.date || '1970-01-01') + 'T' + (b.time || '00:00'));
+          return aDate - bDate;
+        });
+
+        activeTournaments = activeList;
+        allTournaments = allList;
+        tournamentsById = byId;
         renderTournamentOptions();
+        renderFilters();
+        applyFilters();
       })
       .catch(function (error) {
         console.error(error);
         activeTournaments = [];
+        allTournaments = [];
+        tournamentsById = {};
         renderTournamentOptions();
+        renderFilters();
+        applyFilters();
         setStatus('Ne mogu učitati turnire.', true);
       });
   }
 
   function renderFilters() {
     var selected = filterTournamentSelect.value;
-    var seen = {};
-    var labels = [];
-
-    allRegistrations.forEach(function (item) {
-      var label = item.tournamentLabel || 'Nepoznati turnir';
-      if (!seen[label]) {
-        seen[label] = true;
-        labels.push(label);
-      }
-    });
-
-    labels.sort(function (a, b) {
-      return a.localeCompare(b, 'hr', { sensitivity: 'base' });
-    });
+    var validTournamentIds = {};
 
     filterTournamentSelect.innerHTML = '';
     var defaultOption = document.createElement('option');
     defaultOption.value = '';
-    defaultOption.textContent = 'Svi turniri';
+    defaultOption.textContent = 'Odaberi turnir';
     filterTournamentSelect.appendChild(defaultOption);
 
-    labels.forEach(function (label) {
+    allTournaments.forEach(function (item) {
+      if (!item || !item.id) {
+        return;
+      }
+
+      validTournamentIds[item.id] = true;
+
       var option = document.createElement('option');
-      option.value = label;
-      option.textContent = label;
+      option.value = item.id;
+      option.textContent = getTournamentLabel(item);
       filterTournamentSelect.appendChild(option);
     });
 
-    filterTournamentSelect.value = seen[selected] ? selected : '';
+    var unknownById = {};
+    allRegistrations.forEach(function (item) {
+      if (!item || !item.tournamentId || validTournamentIds[item.tournamentId] || unknownById[item.tournamentId]) {
+        return;
+      }
+      unknownById[item.tournamentId] = true;
+    });
+
+    Object.keys(unknownById).sort(function (a, b) {
+      return a.localeCompare(b, 'hr', { sensitivity: 'base' });
+    }).forEach(function (id) {
+      var option = document.createElement('option');
+      option.value = id;
+      option.textContent = 'Nepoznati turnir (' + id + ')';
+      filterTournamentSelect.appendChild(option);
+    });
+
+    filterTournamentSelect.value = validTournamentIds[selected] || unknownById[selected] ? selected : '';
   }
 
   function renderTable(items) {
@@ -595,9 +650,9 @@
     var filtered = allRegistrations.filter(function (item) {
       var fullName = ((item.firstName || '') + ' ' + (item.lastName || '')).trim().toLowerCase();
       var email = (item.email || '').toLowerCase();
-      var tournamentLabel = (item.tournamentLabel || '').toLowerCase();
+      var tournamentLabel = getRegistrationTournamentLabel(item).toLowerCase();
 
-      var tournamentOk = !selectedTournament || (item.tournamentLabel || '') === selectedTournament;
+      var tournamentOk = !selectedTournament || (item.tournamentId || '') === selectedTournament;
       var searchOk = !searchText
         || fullName.indexOf(searchText) !== -1
         || email.indexOf(searchText) !== -1
@@ -640,7 +695,7 @@
         item.firstName || '',
         item.lastName || '',
         item.email || '',
-        item.tournamentLabel || '',
+        getRegistrationTournamentLabel(item),
         item.note || '',
         formatDateTime(item.createdAtDate)
       ].map(csvEscape).join(','));
@@ -677,7 +732,7 @@
       setStatus('Ukupno prijava: 0.', false);
     } else {
       var tournamentOnlyCount = allRegistrations.filter(function (item) {
-        return (item.tournamentLabel || '') === selectedTournament;
+        return (item.tournamentId || '') === selectedTournament;
       }).length;
       setStatus('Ukupno prijava: ' + tournamentOnlyCount + '.', false);
     }
