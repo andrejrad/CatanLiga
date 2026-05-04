@@ -52,8 +52,9 @@
   var bulkTournamentButton = document.getElementById('bulkEmailTournamentBtn');
   var bulkAllButton = document.getElementById('bulkEmailAllBtn');
   var bulkStatusEl = document.getElementById('bulkEmailStatus');
-  var resetStagingDataButton = document.getElementById('resetStagingDataBtn');
-  var resetStagingDataStatusEl = document.getElementById('resetStagingDataStatus');
+  var resetStagingDataButton = null;
+  var resetStagingDataStatusEl = null;
+  var resetStagingDataHandlerBound = false;
 
   var db = null;
   var tournamentsCollection = null;
@@ -122,6 +123,70 @@
     return resolveProjectId() === 'catan-liga-staging';
   }
 
+  function ensureStagingResetUi() {
+    if (!form || !isStagingProject()) {
+      return;
+    }
+
+    if (!resetStagingDataButton) {
+      var actionsRow = document.createElement('div');
+      actionsRow.className = 'page-cta-row page-cta-row-left';
+
+      resetStagingDataButton = document.createElement('button');
+      resetStagingDataButton.id = 'resetStagingDataBtn';
+      resetStagingDataButton.type = 'button';
+      resetStagingDataButton.className = 'page-cta-btn page-cta-btn-secondary';
+      resetStagingDataButton.textContent = 'Resetiraj podatke';
+      actionsRow.appendChild(resetStagingDataButton);
+
+      resetStagingDataStatusEl = document.createElement('p');
+      resetStagingDataStatusEl.id = 'resetStagingDataStatus';
+      resetStagingDataStatusEl.className = 'form-status admin-form-status';
+      resetStagingDataStatusEl.setAttribute('aria-live', 'polite');
+
+      form.appendChild(actionsRow);
+      form.appendChild(resetStagingDataStatusEl);
+    }
+
+    if (!resetStagingDataHandlerBound) {
+      resetStagingDataButton.addEventListener('click', async function () {
+        if (!db) {
+          setResetStatus('Firebase nije spreman. Pokušaj ponovno.', true);
+          return;
+        }
+
+        var confirmed = window.confirm('Ovo će obrisati sve rasporede stolova i upisane bodove na STAGINGU. Nastaviti?');
+        if (!confirmed) {
+          setResetStatus('Reset podataka je otkazan.', true);
+          return;
+        }
+
+        resetStagingDataButton.disabled = true;
+        resetStagingDataButton.style.opacity = '0.7';
+        resetStagingDataButton.style.cursor = 'not-allowed';
+        setResetStatus('Brisanje staging podataka je u tijeku...', false);
+
+        try {
+          var deletedAssignments = await deleteCollectionInBatches('adminTableAssignments', 400);
+          var deletedScores = await deleteCollectionInBatches('adminRoundScores', 400);
+
+          setResetStatus(
+            'Reset gotovo. Obrisano rasporeda: ' + deletedAssignments + ', bodova: ' + deletedScores + '.',
+            false
+          );
+        } catch (error) {
+          console.error(error);
+          setResetStatus('Reset podataka nije uspio.', true);
+        } finally {
+          resetStagingDataButton.disabled = false;
+          resetStagingDataButton.style.opacity = '1';
+          resetStagingDataButton.style.cursor = 'pointer';
+        }
+      });
+      resetStagingDataHandlerBound = true;
+    }
+  }
+
   async function deleteCollectionInBatches(collectionName, batchSize) {
     var totalDeleted = 0;
 
@@ -140,46 +205,6 @@
     }
 
     return totalDeleted;
-  }
-
-  async function resetStagingData() {
-    if (!db) {
-      setResetStatus('Firebase nije spreman. Pokušaj ponovno.', true);
-      return;
-    }
-
-    if (!isStagingProject()) {
-      setResetStatus('Reset je dozvoljen samo na staging projektu.', true);
-      return;
-    }
-
-    var confirmed = window.confirm('Ovo će obrisati sve rasporede stolova i upisane bodove na STAGINGU. Nastaviti?');
-    if (!confirmed) {
-      setResetStatus('Reset podataka je otkazan.', true);
-      return;
-    }
-
-    resetStagingDataButton.disabled = true;
-    resetStagingDataButton.style.opacity = '0.7';
-    resetStagingDataButton.style.cursor = 'not-allowed';
-    setResetStatus('Brisanje staging podataka je u tijeku...', false);
-
-    try {
-      var deletedAssignments = await deleteCollectionInBatches('adminTableAssignments', 400);
-      var deletedScores = await deleteCollectionInBatches('adminRoundScores', 400);
-
-      setResetStatus(
-        'Reset gotovo. Obrisano rasporeda: ' + deletedAssignments + ', bodova: ' + deletedScores + '.',
-        false
-      );
-    } catch (error) {
-      console.error(error);
-      setResetStatus('Reset podataka nije uspio.', true);
-    } finally {
-      resetStagingDataButton.disabled = false;
-      resetStagingDataButton.style.opacity = '1';
-      resetStagingDataButton.style.cursor = 'pointer';
-    }
   }
 
   function formatDateTime(dateObj) {
@@ -784,8 +809,8 @@
     tournamentsCollection = db.collection('adminTournaments');
     registrationsCollection = db.collection('registrations');
 
-    if (resetStagingDataButton) {
-      resetStagingDataButton.hidden = !isStagingProject();
+    if (isStagingProject()) {
+      ensureStagingResetUi();
     }
 
     return true;
@@ -924,9 +949,6 @@
   exportButton.addEventListener('click', exportFilteredRegistrationsToCsv);
   bulkTournamentButton.addEventListener('click', sendBulkTournamentEmail);
   bulkAllButton.addEventListener('click', sendBulkAllPlayersEmail);
-  if (resetStagingDataButton) {
-    resetStagingDataButton.addEventListener('click', resetStagingData);
-  }
 
   tabButtons.forEach(function (button) {
     button.addEventListener('click', function () {
