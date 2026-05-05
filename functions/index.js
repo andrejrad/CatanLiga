@@ -189,23 +189,32 @@ exports.sendRegistrationConfirmation = onRequest(
       const mailFrom = getMailFromHeader();
       const playerName = `${firstName} ${lastName}`.trim();
       const subject = "Potvrda prijave - Catan Liga Zagreb";
-      const intro = "Prijava je uspješno zaprimljena.";
-      const details = tournamentLabel ? `Prijavljen turnir: ${tournamentLabel}` : "Prijavljen turnir je evidentiran u sustavu.";
+      const intro = "Uspješno smo zaprimili Vašu prijavu za sudjelovanje.";
+      const details = tournamentLabel ? `Prijavljeni turnir: ${tournamentLabel}` : "Prijavljeni turnir: evidentiran u sustavu";
+      const detailsHtml = tournamentLabel
+        ? `<p><strong>Prijavljeni turnir:</strong> <strong>${tournamentLabel}</strong></p>`
+        : "<p><strong>Prijavljeni turnir:</strong> <strong>evidentiran u sustavu</strong></p>";
       const text = [
-        `Pozdrav ${playerName},`,
+        `Poštovani/a ${playerName},`,
         "",
         intro,
+        "",
         details,
         "",
-        "Vidimo se na turniru.",
-        "Catan Liga Zagreb"
+        "Veselimo se Vašem dolasku i dobrim partijama Catana! \u{1F60A}",
+        "",
+        "Lijep pozdrav,",
+        "Catan Liga Zagreb",
+        "Instagram: @catanliga_zagreb",
+        "Web: www.catanligazagreb.com"
       ].join("\n");
 
       const html = [
-        `<p>Pozdrav ${playerName},</p>`,
+        `<p>Poštovani/a ${playerName},</p>`,
         `<p>${intro}</p>`,
-        `<p>${details}</p>`,
-        "<p>Vidimo se na turniru.<br/>Catan Liga Zagreb</p>"
+        detailsHtml,
+        "<p>Veselimo se Vašem dolasku i dobrim partijama Catana! 😊</p>",
+        "<p>Lijep pozdrav,<br/>Catan Liga Zagreb<br/>Instagram: @catanliga_zagreb<br/>Web: www.catanligazagreb.com</p>"
       ].join("");
 
       await transporter.sendMail({

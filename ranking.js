@@ -89,6 +89,12 @@
     return Number.isFinite(parsed) ? parsed : Number.MAX_SAFE_INTEGER;
   }
 
+  function getScorePlayerKey(score) {
+    var registration = state.registrationsById[score.registrationId] || null;
+    var email = normalize(registration ? registration.email : '');
+    return email || ('registration:' + (score.registrationId || score.id));
+  }
+
   function buildTournamentTieBreakContext(scores) {
     var tableVpTotals = {};
     var ratioSums = {};
