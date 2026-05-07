@@ -250,7 +250,6 @@ exports.sendBulkTournamentEmail = onRequest(
     try {
       const adminPassword = req.body && req.body.adminPassword;
       const tournamentId = normalize(req.body && req.body.tournamentId);
-      const tournamentLabel = normalize(req.body && req.body.tournamentLabel);
       const subjectRaw = normalize(req.body && req.body.subject);
       const bodyRaw = sanitizeMultilineText(req.body && req.body.body);
 
@@ -277,10 +276,8 @@ exports.sendBulkTournamentEmail = onRequest(
       }
 
       const transporter = buildTransporter();
-      const titleLine = tournamentLabel ? `Kolo: ${tournamentLabel}` : "Kolo Catan Liga Zagreb";
-      const text = [titleLine, "", bodyRaw, "", "Catan Liga Zagreb"].join("\n");
+      const text = [bodyRaw, "", "Catan Liga Zagreb"].join("\n");
       const html = [
-        `<p><strong>${titleLine}</strong></p>`,
         toSimpleHtml(bodyRaw),
         "<p style=\"margin-top:14px;\">Catan Liga Zagreb</p>"
       ].join("");
