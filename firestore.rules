@@ -50,6 +50,7 @@ service cloud.firestore {
           'registrationCloseHours',
           'maxCapacity',
           'active',
+          'linkedTournamentIds',
           'createdAt'
         ])
         && request.resource.data.date is string
@@ -76,6 +77,9 @@ service cloud.firestore {
           || (request.resource.data.maxCapacity is int
             && request.resource.data.maxCapacity >= 0
             && request.resource.data.maxCapacity <= 2000))
+        && (!('linkedTournamentIds' in request.resource.data)
+          || (request.resource.data.linkedTournamentIds is list
+            && request.resource.data.linkedTournamentIds.size() <= 20))
         && (!('active' in request.resource.data) || request.resource.data.active is bool);
     }
 
@@ -182,7 +186,12 @@ service cloud.firestore {
         && request.resource.data.keys().hasOnly([
           'showPublicButton'
         ])
-        && request.resource.data.showPublicButton is bool);
+        && request.resource.data.showPublicButton is bool)
+        || (settingId == 'carousel'
+        && request.resource.data.keys().hasOnly([
+          'showCarousel'
+        ])
+        && request.resource.data.showCarousel is bool);
 
       allow delete: if false;
     }
@@ -349,6 +358,43 @@ service cloud.firestore {
         && (!('attended' in request.resource.data) || request.resource.data.attended is bool);
 
       allow delete: if true;
+    }
+
+    match /adminPravila/{docId} {
+      allow read: if true;
+
+      allow delete: if true;
+
+      allow create: if request.resource.data.keys().hasOnly([
+          'naziv',
+          'opis',
+          'pdfUrl',
+          'pdfPath',
+          'createdAt'
+        ])
+        && request.resource.data.naziv is string
+        && request.resource.data.naziv.size() > 0
+        && request.resource.data.naziv.size() <= 120
+        && request.resource.data.opis is string
+        && request.resource.data.opis.size() <= 500
+        && request.resource.data.pdfUrl is string
+        && request.resource.data.pdfUrl.size() > 0
+        && request.resource.data.pdfPath is string
+        && request.resource.data.pdfPath.size() > 0;
+
+      allow update: if request.resource.data.keys().hasOnly([
+          'naziv',
+          'opis',
+          'pdfUrl',
+          'pdfPath',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.naziv is string
+        && request.resource.data.naziv.size() > 0
+        && request.resource.data.naziv.size() <= 120
+        && request.resource.data.opis is string
+        && request.resource.data.opis.size() <= 500;
     }
   }
 }

@@ -185,6 +185,79 @@
     return a.playerName.localeCompare(b.playerName, 'hr', { sensitivity: 'base' });
   }
 
+  function buildLinkedTournamentGroupMap(tournaments) {
+    var adjacency = {};
+
+    tournaments.forEach(function (t) {
+      adjacency[t.id] = adjacency[t.id] || {};
+    });
+
+    tournaments.forEach(function (t) {
+      var linked = Array.isArray(t.linkedTournamentIds) ? t.linkedTournamentIds : [];
+      linked.forEach(function (linkedId) {
+        if (!adjacency[t.id] || !adjacency[linkedId]) {
+          return;
+        }
+
+        adjacency[t.id][linkedId] = true;
+        adjacency[linkedId][t.id] = true;
+      });
+    });
+
+    var visited = {};
+    var groupById = {};
+
+    Object.keys(adjacency).forEach(function (startId) {
+      if (visited[startId]) {
+        return;
+      }
+
+      var stack = [startId];
+      var component = [];
+
+      while (stack.length) {
+        var current = stack.pop();
+        if (visited[current]) {
+          continue;
+        }
+        visited[current] = true;
+        component.push(current);
+
+        Object.keys(adjacency[current] || {}).forEach(function (neighbor) {
+          if (!visited[neighbor]) {
+            stack.push(neighbor);
+          }
+        });
+      }
+
+      component.sort(function (a, b) {
+        return a.localeCompare(b, 'hr', { sensitivity: 'base' });
+      });
+      var groupKey = component.join('|');
+
+      component.forEach(function (id) {
+        groupById[id] = groupKey;
+      });
+    });
+
+    return groupById;
+  }
+
+  function isBetterTournamentResult(candidate, current) {
+    var cmp = compareByTieBreak(candidate, current, true);
+    if (cmp !== 0) {
+      return cmp < 0;
+    }
+
+    var cPlace = Number.isInteger(candidate.rankPlace) ? candidate.rankPlace : Number.MAX_SAFE_INTEGER;
+    var xPlace = Number.isInteger(current.rankPlace) ? current.rankPlace : Number.MAX_SAFE_INTEGER;
+    if (cPlace !== xPlace) {
+      return cPlace < xPlace;
+    }
+
+    return candidate.playerName.localeCompare(current.playerName, 'hr', { sensitivity: 'base' }) < 0;
+  }
+
   function aggregateScores(scores) {
     var totals = {};
     var singleTournamentId = null;
@@ -212,6 +285,8 @@
 
       if (!totals[key]) {
         totals[key] = {
+          playerKey: key,
+          tournamentId: score.tournamentId || '',
           playerName: getPlayerName(registration, score),
           totalPoints: 0,
           wins: 0,
@@ -246,6 +321,86 @@
       .sort(function (a, b) {
         return compareByTieBreak(a, b, useExtendedRules);
       });
+  }
+
+  function aggregateLeagueScores() {
+    var scoresByTournament = {};
+    state.scores.forEach(function (score) {
+      var tid = score.tournamentId || '';
+      if (!tid) {
+        return;
+      }
+      if (!scoresByTournament[tid]) {
+        scoresByTournament[tid] = [];
+      }
+      scoresByTournament[tid].push(score);
+    });
+
+    var groupByTournamentId = buildLinkedTournamentGroupMap(state.tournaments);
+    var bestByPlayerAndGroup = {};
+
+    Object.keys(scoresByTournament).forEach(function (tid) {
+      var ranking = aggregateScores(scoresByTournament[tid]);
+
+      ranking.forEach(function (item, index) {
+        item.rankPlace = index + 1;
+
+        var playerKey = item.playerKey || item.playerName;
+        var groupKey = groupByTournamentId[tid] || ('single|' + tid);
+
+        if (!bestByPlayerAndGroup[playerKey]) {
+          bestByPlayerAndGroup[playerKey] = {
+            playerName: item.playerName,
+            registrationCreatedAtMs: item.registrationCreatedAtMs,
+            groups: {}
+          };
+        }
+
+        if (item.registrationCreatedAtMs < bestByPlayerAndGroup[playerKey].registrationCreatedAtMs) {
+          bestByPlayerAndGroup[playerKey].registrationCreatedAtMs = item.registrationCreatedAtMs;
+        }
+
+        var current = bestByPlayerAndGroup[playerKey].groups[groupKey];
+        if (!current || isBetterTournamentResult(item, current)) {
+          bestByPlayerAndGroup[playerKey].groups[groupKey] = item;
+        }
+      });
+    });
+
+    return Object.keys(bestByPlayerAndGroup).map(function (playerKey) {
+      var entry = bestByPlayerAndGroup[playerKey];
+      var selectedResults = Object.keys(entry.groups).map(function (groupKey) {
+        return entry.groups[groupKey];
+      });
+
+      var aggregate = {
+        playerKey: playerKey,
+        playerName: entry.playerName,
+        totalPoints: 0,
+        wins: 0,
+        totalVp: 0,
+        lastPlace: null,
+        lastOrder: -1,
+        registrationCreatedAtMs: entry.registrationCreatedAtMs,
+        tournamentsPlayed: 0
+      };
+
+      selectedResults.forEach(function (result) {
+        aggregate.totalPoints += result.totalPoints;
+        aggregate.wins += result.wins;
+        aggregate.totalVp += result.totalVp;
+        aggregate.tournamentsPlayed += 1;
+
+        if (result.lastOrder >= aggregate.lastOrder) {
+          aggregate.lastOrder = result.lastOrder;
+          aggregate.lastPlace = result.lastPlace;
+        }
+      });
+
+      return aggregate;
+    }).sort(function (a, b) {
+      return compareByTieBreak(a, b, false);
+    });
   }
 
   function renderRankingTable(container, items) {
@@ -335,7 +490,7 @@
   }
 
   function renderLigaRanking() {
-    var items = aggregateScores(state.scores);
+    var items = aggregateLeagueScores();
     renderRankingTable(ligaListEl, items);
     setStatus(ligaStatusEl, 'Ukupno igrača: ' + items.length + '.', false);
   }

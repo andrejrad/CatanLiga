@@ -17,6 +17,7 @@ const COLLECTIONS_TO_COPY = [
   'adminScoreRules',
   'adminScoreConfig',
   'adminAwards',
+  'adminPravila',
 ];
 
 const PRODUCTION_PROJECT = 'catan-liga';

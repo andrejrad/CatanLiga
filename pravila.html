@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=74" />
+    <link rel="stylesheet" href="styles.css?v=86" />
   </head>
   <body>
     <div class="bg" aria-hidden="true"></div>
@@ -27,6 +27,12 @@
     </a>
     <h1 class="page-title page-title-flow">Pravila</h1>
     <div class="page-content">
+      <p class="page-paragraph">Ovdje možeš pronaći sva pravila i dokumente vezane uz Catan Ligu Zagreb.</p>
+
+      <div id="pravila-docs-list" class="pravila-public-list" aria-live="polite">
+        <p class="admin-note">Učitavanje pravila...</p>
+      </div>
+
       <div class="page-cta-row" aria-label="Quick actions">
         <a class="page-cta-btn" href="prijava.html">Prijava</a>
         <a class="page-cta-btn" href="ranking.html">Leaderboard</a>
@@ -36,5 +42,9 @@
         <a class="nav-btn" href="kontakt.html">Kontakt</a>
       </div>
     </div>
+    <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
+    <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
+    <script defer src="/__/firebase/init.js"></script>
+    <script defer src="pravila.js?v=1"></script>
   </body>
 </html>

@@ -321,6 +321,99 @@
     });
   }
 
+  function buildLinkedTournamentGroupMap(tournaments) {
+    var adjacency = {};
+
+    tournaments.forEach(function (t) {
+      adjacency[t.id] = adjacency[t.id] || {};
+    });
+
+    tournaments.forEach(function (t) {
+      var linked = Array.isArray(t.linkedTournamentIds) ? t.linkedTournamentIds : [];
+      linked.forEach(function (linkedId) {
+        if (!adjacency[t.id] || !adjacency[linkedId]) {
+          return;
+        }
+
+        adjacency[t.id][linkedId] = true;
+        adjacency[linkedId][t.id] = true;
+      });
+    });
+
+    var visited = {};
+    var groupById = {};
+
+    Object.keys(adjacency).forEach(function (startId) {
+      if (visited[startId]) {
+        return;
+      }
+
+      var stack = [startId];
+      var component = [];
+
+      while (stack.length) {
+        var current = stack.pop();
+        if (visited[current]) {
+          continue;
+        }
+
+        visited[current] = true;
+        component.push(current);
+
+        Object.keys(adjacency[current] || {}).forEach(function (neighbor) {
+          if (!visited[neighbor]) {
+            stack.push(neighbor);
+          }
+        });
+      }
+
+      component.sort(function (a, b) {
+        return a.localeCompare(b, 'hr', { sensitivity: 'base' });
+      });
+      var groupKey = component.join('|');
+
+      component.forEach(function (id) {
+        groupById[id] = groupKey;
+      });
+    });
+
+    return groupById;
+  }
+
+  function isBetterTournamentResultForLiga(candidate, current) {
+    if (candidate.totalPoints !== current.totalPoints) {
+      return candidate.totalPoints > current.totalPoints;
+    }
+    if (candidate.wins !== current.wins) {
+      return candidate.wins > current.wins;
+    }
+    if (candidate.totalVp !== current.totalVp) {
+      return candidate.totalVp > current.totalVp;
+    }
+
+    var cLastPlace = Number.isInteger(candidate.lastPlace) ? candidate.lastPlace : 9999;
+    var xLastPlace = Number.isInteger(current.lastPlace) ? current.lastPlace : 9999;
+    if (cLastPlace !== xLastPlace) {
+      return cLastPlace < xLastPlace;
+    }
+
+    var rounds = [3, 2, 1];
+    for (var i = 0; i < rounds.length; i += 1) {
+      var round = rounds[i];
+      var cRatio = typeof candidate.roundVpRatioByRound[round] === 'number' ? candidate.roundVpRatioByRound[round] : -1;
+      var xRatio = typeof current.roundVpRatioByRound[round] === 'number' ? current.roundVpRatioByRound[round] : -1;
+      if (cRatio !== xRatio) {
+        return cRatio > xRatio;
+      }
+    }
+
+    if (candidate.registrationCreatedAtMs !== current.registrationCreatedAtMs) {
+      return candidate.registrationCreatedAtMs < current.registrationCreatedAtMs;
+    }
+
+    return (candidate.rankPlace || 9999) < (current.rankPlace || 9999);
+  }
+
   // ── Main render ───────────────────────────────────────────────────────────────
 
   function renderAll() {
@@ -462,31 +555,54 @@
 
   function renderLigaTab(tStats, tournaments) {
     var totalTournaments = tournaments.length;
+    var groupByTournamentId = buildLinkedTournamentGroupMap(tournaments);
+
+    var bestByPlayerAndGroup = {};
+    tStats.forEach(function (ts) {
+      var groupKey = groupByTournamentId[ts.tid] || ('single|' + ts.tid);
+
+      ts.ranking.forEach(function (item, idx) {
+        var email = item.email;
+        if (!bestByPlayerAndGroup[email]) {
+          bestByPlayerAndGroup[email] = {};
+        }
+
+        var candidate = Object.assign({}, item, { rankPlace: idx + 1 });
+        var current = bestByPlayerAndGroup[email][groupKey];
+
+        if (!current || isBetterTournamentResultForLiga(candidate, current)) {
+          bestByPlayerAndGroup[email][groupKey] = candidate;
+        }
+      });
+    });
 
     // Aggregate per-player liga stats from tournament rankings
     var ligaPlayers = {};
-    tStats.forEach(function (ts) {
-      ts.ranking.forEach(function (item, idx) {
-        var email = item.email;
-        if (!ligaPlayers[email]) {
-          ligaPlayers[email] = {
-            email: email,
-            totalPoints: 0,
-            wins: 0,
-            podiums: 0,
-            tournamentsPlayed: 0,
-            placements: []
-          };
-        }
-        var p = ligaPlayers[email];
+    Object.keys(bestByPlayerAndGroup).forEach(function (email) {
+      var results = Object.keys(bestByPlayerAndGroup[email]).map(function (groupKey) {
+        return bestByPlayerAndGroup[email][groupKey];
+      });
+
+      if (!ligaPlayers[email]) {
+        ligaPlayers[email] = {
+          email: email,
+          totalPoints: 0,
+          wins: 0,
+          podiums: 0,
+          tournamentsPlayed: 0,
+          placements: []
+        };
+      }
+
+      var p = ligaPlayers[email];
+      results.forEach(function (item) {
         p.totalPoints += item.totalPoints;
         p.wins += item.wins;
-        var place = idx + 1;
-        if (place <= 3) {
+        if ((item.rankPlace || 9999) <= 3) {
           p.podiums++;
         }
         p.tournamentsPlayed++;
-        p.placements.push(place);
+        p.placements.push(item.rankPlace || 9999);
       });
     });
 

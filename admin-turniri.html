@@ -66,6 +66,13 @@
           </select>
         </label>
 
+        <label class="form-field">
+          <span class="form-label">Povezani turniri (opcionalno)</span>
+          <select id="tournamentLinkedTournaments" name="tournamentLinkedTournaments" multiple size="5">
+          </select>
+          <span class="field-note">Ako igrač sudjeluje na više povezanih turnira, za ligu se računa samo njegov bolji rezultat.</span>
+        </label>
+
         <p id="tournamentFormStatus" class="form-status" aria-live="polite"></p>
 
         <div class="page-cta-row page-cta-row-left">
@@ -112,7 +119,7 @@
     <script defer src="/__/firebase/init.js"></script>
     <script defer src="admin-env-config.js?v=1"></script>
     <script defer src="admin-auth.js?v=3"></script>
-    <script defer src="admin-turniri.js?v=14"></script>
+    <script defer src="admin-turniri.js?v=16"></script>
   </body>
 </html>
 

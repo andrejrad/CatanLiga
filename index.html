@@ -14,7 +14,7 @@
       href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700&family=Source+Sans+3:wght@400;600&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="styles.css?v=87" />
+    <link rel="stylesheet" href="styles.css?v=88" />
     <script defer src="/__/firebase/9.23.0/firebase-app-compat.js"></script>
     <script defer src="/__/firebase/9.23.0/firebase-firestore-compat.js"></script>
     <script defer src="/__/firebase/init.js"></script>
@@ -57,6 +57,10 @@
       <a class="nav-btn" href="kontakt.html">Kontakt</a>
       <a class="nav-btn" id="rasporedStolovaBtn" href="raspored-stolova.html" style="display: none;">Raspored Stolova</a>
     </nav>
+    <section class="carousel" id="indexCarousel" aria-label="Catan carousel" hidden>
+      <p class="carousel-text" id="indexCarouselText"></p>
+      <div class="carousel-dots" id="indexCarouselDots"></div>
+    </section>
     <div class="sm-corner">
       <img src="Assets/IG_TT-removebg-preview.png" alt="Social media links" />
       <a class="sm-link sm-instagram" href="https://www.instagram.com/catanliga_zagreb" target="_blank" rel="noopener" aria-label="Instagram"></a>
@@ -166,7 +170,8 @@
         waitForFirebaseAndSubscribe();
       })();
     </script>
-    <script defer src="index-leaderboard.js?v=1"></script>
+    <script defer src="index-leaderboard.js?v=2"></script>
+    <script defer src="index-carousel.js?v=1"></script>
   </body>
 </html>
 

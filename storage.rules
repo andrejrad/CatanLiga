@@ -21,5 +21,12 @@ service firebase.storage {
         || (request.resource.size < 10 * 1024 * 1024
         && request.resource.contentType.matches('image/.*'));
     }
+
+    match /pravila-pdf/{fileName} {
+      allow read: if true;
+      allow write: if request.resource == null
+        || (request.resource.size < 20 * 1024 * 1024
+        && request.resource.contentType == 'application/pdf');
+    }
   }
 }

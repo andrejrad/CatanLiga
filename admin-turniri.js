@@ -10,6 +10,7 @@
   var registrationCloseHoursInput = document.getElementById('tournamentRegistrationCloseHours');
   var maxCapacityInput = document.getElementById('tournamentMaxCapacity');
   var activeInput = document.getElementById('tournamentActive');
+  var linkedTournamentsSelect = document.getElementById('tournamentLinkedTournaments');
   var statusEl = document.getElementById('tournamentFormStatus');
   var listEl = document.getElementById('tournamentList');
   var filterRoundSelect = document.getElementById('tournamentFilterRound');
@@ -31,7 +32,7 @@
   var allPartners = [];
   var allTournaments = [];
 
-  if (!form || !dateInput || !venueSelect || !timeInput || !roundInput || !registrationCloseHoursInput || !maxCapacityInput || !activeInput || !statusEl || !listEl) {
+  if (!form || !dateInput || !venueSelect || !timeInput || !roundInput || !registrationCloseHoursInput || !maxCapacityInput || !activeInput || !linkedTournamentsSelect || !statusEl || !listEl) {
     return;
   }
 
@@ -98,6 +99,9 @@
   function resetEditMode() {
     editingTournamentId = null;
     activeInput.value = 'true';
+    Array.prototype.forEach.call(linkedTournamentsSelect.options, function (option) {
+      option.selected = false;
+    });
     if (submitButton) {
       submitButton.textContent = 'Dodaj turnir';
     }
@@ -116,6 +120,16 @@
     activeInput.value = item.active === false ? 'false' : 'true';
     venueSelect.value = item.venueId || '';
 
+    renderLinkedTournamentOptions();
+    var linkedIds = Array.isArray(item.linkedTournamentIds) ? item.linkedTournamentIds : [];
+    var selectedSet = {};
+    linkedIds.forEach(function (id) {
+      selectedSet[id] = true;
+    });
+    Array.prototype.forEach.call(linkedTournamentsSelect.options, function (option) {
+      option.selected = !!selectedSet[option.value];
+    });
+
     if (submitButton) {
       submitButton.textContent = 'Spremi izmjene';
     }
@@ -125,6 +139,76 @@
 
     setStatus('Uređivanje turnira: kolo ' + item.round + '.', false);
     form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function getTournamentLabel(item) {
+    return 'Kolo ' + (item.round || '') + ' - ' + formatDate(item.date, false) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
+  }
+
+  function sanitizeLinkedTournamentIds(rawIds, selfId) {
+    var allowed = {};
+    allTournaments.forEach(function (item) {
+      allowed[item.id] = true;
+    });
+
+    var seen = {};
+    var sanitized = [];
+
+    (rawIds || []).forEach(function (rawId) {
+      var id = String(rawId || '').trim();
+      if (!id || id === selfId || !allowed[id] || seen[id]) {
+        return;
+      }
+
+      seen[id] = true;
+      sanitized.push(id);
+    });
+
+    sanitized.sort(function (a, b) {
+      return a.localeCompare(b, 'hr', { sensitivity: 'base' });
+    });
+
+    return sanitized;
+  }
+
+  async function synchronizeLinkedTournaments(tournamentId, nextLinkedIds, previousLinkedIds) {
+    if (!tournamentId || !tournamentsCollection) {
+      return;
+    }
+
+    var nextSet = {};
+    var prevSet = {};
+    (nextLinkedIds || []).forEach(function (id) { nextSet[id] = true; });
+    (previousLinkedIds || []).forEach(function (id) { prevSet[id] = true; });
+
+    var batch = db.batch();
+    var hasUpdates = false;
+
+    Object.keys(nextSet).forEach(function (id) {
+      if (!id || id === tournamentId) {
+        return;
+      }
+
+      batch.update(tournamentsCollection.doc(id), {
+        linkedTournamentIds: firebase.firestore.FieldValue.arrayUnion(tournamentId)
+      });
+      hasUpdates = true;
+    });
+
+    Object.keys(prevSet).forEach(function (id) {
+      if (!id || id === tournamentId || nextSet[id]) {
+        return;
+      }
+
+      batch.update(tournamentsCollection.doc(id), {
+        linkedTournamentIds: firebase.firestore.FieldValue.arrayRemove(tournamentId)
+      });
+      hasUpdates = true;
+    });
+
+    if (hasUpdates) {
+      await batch.commit();
+    }
   }
 
   async function deleteTournament(item) {
@@ -193,6 +277,20 @@
         batch.delete(doc.ref);
       });
 
+      var linkedSnapshot = await tournamentsCollection
+        .where('linkedTournamentIds', 'array-contains', tournamentId)
+        .get();
+
+      linkedSnapshot.docs.forEach(function (doc) {
+        if (doc.id === tournamentId) {
+          return;
+        }
+
+        batch.update(doc.ref, {
+          linkedTournamentIds: firebase.firestore.FieldValue.arrayRemove(tournamentId)
+        });
+      });
+
       // Delete the tournament itself
       batch.delete(tournamentsCollection.doc(tournamentId));
 
@@ -243,6 +341,49 @@
       option.textContent = venue.name || '';
       option.dataset.name = venue.name || '';
       venueSelect.appendChild(option);
+    });
+  }
+
+  function renderLinkedTournamentOptions() {
+    var selectedSet = {};
+    Array.prototype.forEach.call(linkedTournamentsSelect.options, function (option) {
+      if (option.selected) {
+        selectedSet[option.value] = true;
+      }
+    });
+
+    if (editingTournamentId) {
+      var currentItem = allTournaments.find(function (item) {
+        return item.id === editingTournamentId;
+      });
+      var currentLinked = currentItem && Array.isArray(currentItem.linkedTournamentIds)
+        ? currentItem.linkedTournamentIds
+        : [];
+      currentLinked.forEach(function (id) {
+        selectedSet[id] = true;
+      });
+    }
+
+    linkedTournamentsSelect.innerHTML = '';
+
+    var options = allTournaments
+      .filter(function (item) {
+        return item.id !== editingTournamentId;
+      })
+      .slice()
+      .sort(function (a, b) {
+        if ((a.date || '') !== (b.date || '')) {
+          return (a.date || '').localeCompare(b.date || '');
+        }
+        return compareRoundLabels(a.round, b.round);
+      });
+
+    options.forEach(function (item) {
+      var option = document.createElement('option');
+      option.value = item.id;
+      option.textContent = getTournamentLabel(item);
+      option.selected = !!selectedSet[item.id];
+      linkedTournamentsSelect.appendChild(option);
     });
   }
 
@@ -326,6 +467,57 @@
     return parts[2] + '.' + parts[1] + '.' + year + '.';
   }
 
+  function getLinkedTournamentDisplay(item) {
+    var linkedIds = Array.isArray(item.linkedTournamentIds) ? item.linkedTournamentIds : [];
+    var validIds = linkedIds.filter(function (id) {
+      return !!id && id !== item.id;
+    });
+
+    if (!validIds.length) {
+      return {
+        hasLinks: false,
+        text: '\u2014',
+        title: 'Nema povezanih turnira.'
+      };
+    }
+
+    var linkedItems = validIds.map(function (id) {
+      for (var i = 0; i < allTournaments.length; i += 1) {
+        if (allTournaments[i].id === id) {
+          return allTournaments[i];
+        }
+      }
+      return null;
+    }).filter(function (value) {
+      return !!value;
+    });
+
+    linkedItems.sort(function (a, b) {
+      if ((a.date || '') !== (b.date || '')) {
+        return (a.date || '').localeCompare(b.date || '');
+      }
+      return compareRoundLabels(a.round, b.round);
+    });
+
+    if (!linkedItems.length) {
+      return {
+        hasLinks: true,
+        text: validIds.join(', '),
+        title: 'Povezani ID-evi: ' + validIds.join(', ')
+      };
+    }
+
+    var rounds = linkedItems.map(function (linkedItem) {
+      return String(linkedItem.round || '?');
+    });
+
+    return {
+      hasLinks: true,
+      text: 'Kolo ' + rounds.join(', '),
+      title: linkedItems.map(getTournamentLabel).join(' | ')
+    };
+  }
+
   function renderTournaments() {
     listEl.innerHTML = '';
     var isMobileCompact = !!(window.matchMedia && window.matchMedia('(max-width: 39.99rem)').matches);
@@ -372,9 +564,13 @@
 
     var thead = document.createElement('thead');
     var headRow = document.createElement('tr');
+    var statusIndex = isMobileCompact ? 4 : 5;
+    var firstActionIndex = isMobileCompact ? 6 : 7;
+    var secondActionIndex = firstActionIndex + 1;
+    var thirdActionIndex = firstActionIndex + 2;
     var headLabels = isMobileCompact
-      ? ['Kolo', 'Termin', 'Venue', 'Status', 'Zat.h', '', '', '']
-      : ['Kolo', 'Datum', 'Vrijeme', 'Venue', 'Status', 'Zat.h', '', '', ''];
+      ? ['Kolo', 'Termin', 'Venue', 'Veze', 'Status', 'Zat.h', '', '', '']
+      : ['Kolo', 'Datum', 'Vrijeme', 'Venue', 'Veze', 'Status', 'Zat.h', '', '', ''];
 
     headLabels.forEach(function (label, index) {
       var th = document.createElement('th');
@@ -386,20 +582,20 @@
       if (isMobileCompact && index === 1) {
         th.className = 'tournament-col-termin';
       }
-      if ((isMobileCompact && index === 3) || (!isMobileCompact && index === 4)) {
+      if (index === statusIndex) {
         th.className = 'tournament-col-status';
         th.setAttribute('aria-label', 'Status');
       }
-      if ((isMobileCompact && (index === 5 || index === 6 || index === 7)) || (!isMobileCompact && (index === 6 || index === 7 || index === 8))) {
+      if (index === firstActionIndex || index === secondActionIndex || index === thirdActionIndex) {
         th.className = 'tournament-action-head';
       }
-      if ((isMobileCompact && index === 5) || (!isMobileCompact && index === 6)) {
+      if (index === firstActionIndex) {
         th.setAttribute('aria-label', 'Uredi');
       }
-      if ((isMobileCompact && index === 6) || (!isMobileCompact && index === 7)) {
+      if (index === secondActionIndex) {
         th.setAttribute('aria-label', 'Aktivacija');
       }
-      if ((isMobileCompact && index === 7) || (!isMobileCompact && index === 8)) {
+      if (index === thirdActionIndex) {
         th.setAttribute('aria-label', 'Brisanje');
       }
 
@@ -434,6 +630,26 @@
       var tdVenue = document.createElement('td');
       tdVenue.textContent = item.venueName || '';
       tdVenue.className = 'tournament-venue-cell';
+
+      var tdLinked = document.createElement('td');
+      var linkedDisplay = getLinkedTournamentDisplay(item);
+      var linkedWrap = document.createElement('div');
+      linkedWrap.className = 'tournament-links-cell';
+
+      var linkedBadge = document.createElement('span');
+      linkedBadge.className = linkedDisplay.hasLinks
+        ? 'tournament-links-badge tournament-links-badge-on'
+        : 'tournament-links-badge tournament-links-badge-off';
+      linkedBadge.textContent = linkedDisplay.hasLinks ? 'Povezano' : 'Nema veza';
+
+      var linkedText = document.createElement('span');
+      linkedText.className = 'tournament-links-text';
+      linkedText.textContent = linkedDisplay.text;
+
+      linkedWrap.appendChild(linkedBadge);
+      linkedWrap.appendChild(linkedText);
+      tdLinked.appendChild(linkedWrap);
+      tdLinked.title = linkedDisplay.title;
 
       var tdStatus = document.createElement('td');
       tdStatus.className = 'tournament-col-status';
@@ -509,6 +725,7 @@
         row.appendChild(tdTime);
       }
       row.appendChild(tdVenue);
+      row.appendChild(tdLinked);
       row.appendChild(tdStatus);
       row.appendChild(tdCloseHours);
       row.appendChild(tdEdit);
@@ -554,6 +771,7 @@
         data.id = doc.id;
         allTournaments.push(data);
       });
+      renderLinkedTournamentOptions();
       renderTournaments();
     }, function () {
       listEl.innerHTML = '';
@@ -591,6 +809,10 @@
     var registrationCloseHours = parseInt(registrationCloseHoursInput.value, 10);
     var isActive = activeInput.value !== 'false';
     var isEditing = !!editingTournamentId;
+    var selectedLinkedIds = Array.prototype
+      .slice.call(linkedTournamentsSelect.options)
+      .filter(function (option) { return option.selected; })
+      .map(function (option) { return option.value; });
 
     if (!tournamentsCollection) {
       setStatus('Firebase nije spreman. Pričekaj trenutak i pokušaj ponovno.', true);
@@ -626,6 +848,17 @@
     setStatus('Spremanje turnira u tijeku...', false);
 
     try {
+      var previousLinkedIds = [];
+      if (isEditing) {
+        var editingItem = allTournaments.find(function (item) {
+          return item.id === editingTournamentId;
+        });
+        previousLinkedIds = editingItem && Array.isArray(editingItem.linkedTournamentIds)
+          ? editingItem.linkedTournamentIds
+          : [];
+      }
+
+      var linkedTournamentIds = sanitizeLinkedTournamentIds(selectedLinkedIds, editingTournamentId);
       var payload = {
         date: dateInput.value,
         venueId: venueId,
@@ -634,17 +867,20 @@
         round: round,
         registrationCloseHours: registrationCloseHours,
         maxCapacity: parseInt(maxCapacityInput.value, 10) || 0,
-        active: isActive
+        active: isActive,
+        linkedTournamentIds: linkedTournamentIds
       };
 
       if (isEditing) {
         await tournamentsCollection.doc(editingTournamentId).update(payload);
+        await synchronizeLinkedTournaments(editingTournamentId, linkedTournamentIds, previousLinkedIds);
         form.reset();
         resetEditMode();
         setStatus('Turnir je uspješno ažuriran.', false);
       } else {
         payload.createdAt = firebase.firestore.FieldValue.serverTimestamp();
-        await tournamentsCollection.add(payload);
+        var createdRef = await tournamentsCollection.add(payload);
+        await synchronizeLinkedTournaments(createdRef.id, linkedTournamentIds, []);
         form.reset();
         resetEditMode();
         setStatus('Turnir je uspješno dodan.', false);
