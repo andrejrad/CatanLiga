@@ -182,7 +182,7 @@
     activeTournaments.forEach(function (item) {
       var option = document.createElement('option');
       option.value = item.id;
-      option.textContent = 'Kolo ' + item.round + ' - ' + formatDate(item.date) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
+      option.textContent = item.round + ' - ' + formatDate(item.date) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
       option.dataset.label = option.textContent;
       tournamentSelect.appendChild(option);
     });

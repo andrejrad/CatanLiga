@@ -115,7 +115,7 @@
   function formatTournamentLabel(item) {
     var isMobile = !!(window.matchMedia && window.matchMedia(MOBILE_BREAKPOINT).matches);
     var termin = formatDate(item.date || '', isMobile) + ' ' + (item.time || '');
-    return 'Kolo ' + (item.round || '') + ' | ' + termin.trim() + ' | ' + (item.venueName || '');
+    return (item.round || '') + ' | ' + termin.trim() + ' | ' + (item.venueName || '');
   }
 
   function renderFilterOptions() {

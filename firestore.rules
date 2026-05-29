@@ -66,8 +66,7 @@ service cloud.firestore {
           (request.resource.data.round is int && request.resource.data.round > 0)
           || (request.resource.data.round is string
             && request.resource.data.round.size() > 0
-            && request.resource.data.round.size() <= 16
-            && request.resource.data.round.matches('^[1-9][0-9]*(\\.[a-zA-Z]+)?$'))
+            && request.resource.data.round.size() <= 32)
         )
         && (!('registrationCloseHours' in request.resource.data)
           || (request.resource.data.registrationCloseHours is int

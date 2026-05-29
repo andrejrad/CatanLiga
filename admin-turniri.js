@@ -57,9 +57,9 @@
 
     if (!match) {
       return {
-        isValid: false,
+        isValid: raw.length > 0,
         raw: raw,
-        normalized: lower,
+        normalized: raw,
         major: Number.MAX_SAFE_INTEGER,
         suffix: lower
       };
@@ -142,7 +142,7 @@
   }
 
   function getTournamentLabel(item) {
-    return 'Kolo ' + (item.round || '') + ' - ' + formatDate(item.date, false) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
+    return (item.round || '') + ' - ' + formatDate(item.date, false) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
   }
 
   function sanitizeLinkedTournamentIds(rawIds, selfId) {
@@ -429,7 +429,7 @@
     rounds.forEach(function (round) {
       var option = document.createElement('option');
       option.value = round;
-      option.textContent = 'Kolo ' + round;
+      option.textContent = round;
       filterRoundSelect.appendChild(option);
     });
 
@@ -513,7 +513,7 @@
 
     return {
       hasLinks: true,
-      text: 'Kolo ' + rounds.join(', '),
+      text: rounds.join(', '),
       title: linkedItems.map(getTournamentLabel).join(' | ')
     };
   }
@@ -835,7 +835,7 @@
     }
 
     if (!parsedRound.isValid) {
-      setStatus('Unesi ispravnu oznaku kola (npr. 2 ili 2.a).', true);
+      setStatus('Unesite oznaku kola.', true);
       return;
     }
 

@@ -401,6 +401,19 @@ body {
   font-family: 'Source Sans 3', sans-serif;
 }
 
+.page-content--wide {
+  width: min(95vw, 64rem);
+}
+
+.page-content--wide .tournament-table-wrap {
+  overflow-x: auto;
+}
+
+.page-content--wide .tournament-table {
+  min-width: 36rem;
+  table-layout: auto;
+}
+
 .content-intro {
   margin: 0 0 1.5rem;
   font-size: clamp(0.95rem, 3.2vw, 1.1rem);
@@ -1004,6 +1017,23 @@ body {
 
 .tournament-table tr:last-child td {
   border-bottom: none;
+}
+
+.table-plan-input {
+  width: 3.5rem;
+  border: 1px solid rgba(255, 220, 150, 0.34);
+  border-radius: 0.4rem;
+  background: rgba(24, 10, 4, 0.7);
+  color: #fff7e8;
+  font-family: 'Source Sans 3', sans-serif;
+  font-size: 0.78rem;
+  padding: 0.18rem 0.28rem;
+  text-align: center;
+}
+
+.table-plan-input:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 
 .table-assignment-conflict-row td {

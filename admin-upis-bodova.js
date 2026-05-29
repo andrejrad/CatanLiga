@@ -123,7 +123,7 @@
   }
 
   function getTournamentLabel(item) {
-    return 'Kolo ' + item.round + ' - ' + formatDate(item.date) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
+    return item.round + ' - ' + formatDate(item.date) + ' ' + (item.time || '') + ' - ' + (item.venueName || '');
   }
 
   function getPlayerName(item) {

@@ -57,7 +57,7 @@
 
   function tournamentLabel(t) {
     var venue = t.venueName ? ' \u2013 ' + t.venueName : '';
-    return 'Kolo ' + (t.round || '-') + ' \u2013 ' + formatDate(t.date) + (t.time ? ' ' + t.time : '') + venue;
+    return (t.round || '-') + ' – ' + formatDate(t.date) + (t.time ? ' ' + t.time : '') + venue;
   }
 
   function tournamentSortValue(t) {

@@ -273,7 +273,7 @@
       return 'Nepoznati turnir';
     }
 
-    return 'Kolo ' + (tournament.round || '-') + ' - ' + date + ' ' + time + (venue ? ' - ' + venue : '');
+    return (tournament.round || '-') + ' - ' + date + ' ' + time + (venue ? ' - ' + venue : '');
   }
 
   function getTournamentSortValue(tournamentId) {
